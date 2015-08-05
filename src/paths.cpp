@@ -224,14 +224,22 @@ const wxString mmex::getPathAttachment(const wxString &attachmentsFolder)
 
 const wxString mmex::getTempFolder()
 {
-    const wxString path = mmex::isPortableMode() ? mmex::GetUserDir(false).GetPath() : wxStandardPaths::Get().GetTempDir();
-    const wxString folder = mmex::isPortableMode() ? "tmp" : (mmex::GetAppName() + "_tmp");
-    return wxString::Format("%s%s%s%s", path, wxString(wxFILE_SEP_PATH), folder, wxString(wxFILE_SEP_PATH));
+    return wxString::Format("%s%s%s%s"
+        , wxStandardPaths::Get().GetTempDir() //TODO: user dir more sequre
+        , wxString(wxFILE_SEP_PATH)
+        , mmex::GetAppName() + "_tmp"
+        , wxString(wxFILE_SEP_PATH));
 }
 
 const wxString mmex::getReportIndex()
 {
-    return wxString::Format("%sindex%shtml", mmex::getTempFolder(), wxString(wxFILE_SEP_EXT));
+    const wxString tempDir = wxString::Format("%s%s%s%s"
+        , wxStandardPaths::Get().GetTempDir() //TODO: user dir more sequre
+        , wxString(wxFILE_SEP_PATH)
+        , mmex::GetAppName() + "_rep"
+        , wxString(wxFILE_SEP_PATH));
+    wxString index = wxString::Format("%sindex.html", tempDir);
+    return index;
 }
 
 //----------------------------------------------------------------------------
