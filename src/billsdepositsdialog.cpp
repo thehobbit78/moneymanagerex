@@ -33,6 +33,7 @@
 #include "model/Model_Attachment.h"
 #include "model/Model_Category.h"
 #include "model/Model_Payee.h"
+#include "model/Model_CreditCard.h"
 
 #include <wx/valnum.h>
 
@@ -104,6 +105,23 @@ mmBDDialog::mmBDDialog(wxWindow* parent, int bdID, bool edit, bool enterOccur)
         //
         for (const auto& item : Model_Billsdeposits::splittransaction(bill))
             m_bill_data.local_splits.push_back({ item.CATEGID, item.SUBCATEGID, item.SPLITTRANSAMOUNT });
+
+        // check to see if it's a credit card repeating transaction and get the monthly balance
+        if (!edit && enterOccur && m_bill_data.TRANSCODE == Model_Billsdeposits::all_type()[Model_Billsdeposits::TRANSFER])
+        {
+            const Model_CreditCard::Data *card = Model_CreditCard::instance().get(m_bill_data.TOACCOUNTID);
+            if (card && card->CARDTYPE == Model_CreditCard::CHARGEALL)
+            {
+                const Model_Account::Data *account = Model_Account::instance().get(m_bill_data.ACCOUNTID);
+                if (account && Model_Account::type(account) == Model_Account::CHECKING)
+                {
+                    wxDate date = Model_Billsdeposits::TRANSDATE(*bill);
+                    if (date.GetDay() != date.GetLastMonthDay(date.GetMonth(), date.GetYear()).GetDay())
+                        date -= wxDateSpan::Months(1);
+                    m_bill_data.TRANSAMOUNT = m_bill_data.TOTRANSAMOUNT = fabs(Model_CreditCard::getCardBalanceAt(m_bill_data.TOACCOUNTID, date));
+                }
+            }
+        }
     }
 
     m_transfer = (m_bill_data.TRANSCODE == Model_Billsdeposits::all_type()[Model_Billsdeposits::TRANSFER]);

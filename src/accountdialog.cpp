@@ -29,6 +29,8 @@
 #include "webapp.h"
 
 #include "model/Model_Infotable.h"
+#include "model/Model_CreditCard.h"
+#include "model/Model_Category.h"
 #include "model/Model_Currency.h"
 #include "model/Model_Attachment.h"
 
@@ -46,7 +48,14 @@ enum {
     ID_DIALOG_NEWACCT_TEXTCTRL_INITBALANCE,
     ID_DIALOG_NEWACCT_COMBO_ACCTSTATUS,
     ID_DIALOG_NEWACCT_CHKBOX_FAVACCOUNT,
-    ID_DIALOG_NEWACCT_COMBO_ACCTTYPE
+    ID_DIALOG_NEWACCT_COMBO_ACCTTYPE,
+    ID_DIALOG_NEWACCT_COMBO_HELDACCT,
+    ID_DIALOG_NEWACCT_COMBO_CARDTYPE,
+    ID_DIALOG_NEWACCT_TEXTCTRL_CARDINTERESTRATE,
+    ID_DIALOG_NEWACCT_TEXTCTRL_CARDLIMIT,
+    ID_DIALOG_NEWACCT_TEXTCTRL_CARDAUTOBALANCE,
+    ID_DIALOG_NEWACCT_TEXTCTRL_CARDAUTOBALANCEDATE,
+    ID_DIALOG_NEWACCT_TEXTCTRL_CARDAUTOBALANCEAMNT
 };
 
 wxIMPLEMENT_DYNAMIC_CLASS(mmNewAcctDialog, wxDialog);
@@ -57,6 +66,9 @@ EVT_BUTTON(wxID_CANCEL, mmNewAcctDialog::OnCancel)
 EVT_BUTTON(ID_DIALOG_NEWACCT_BUTTON_CURRENCY, mmNewAcctDialog::OnCurrency)
 EVT_BUTTON(wxID_FILE, mmNewAcctDialog::OnAttachments)
 EVT_MENU_RANGE(wxID_HIGHEST, wxID_HIGHEST + acc_img::MAX_XPM, mmNewAcctDialog::OnCustonImage)
+EVT_CHOICE(ID_DIALOG_NEWACCT_COMBO_HELDACCT, mmNewAcctDialog::OnCreditCardFields)
+EVT_CHOICE(ID_DIALOG_NEWACCT_COMBO_CARDTYPE, mmNewAcctDialog::OnCreditCardFields)
+EVT_CHECKBOX(ID_DIALOG_NEWACCT_TEXTCTRL_CARDAUTOBALANCE, mmNewAcctDialog::OnCreditCardFields)
 EVT_TEXT_ENTER(wxID_ANY, mmNewAcctDialog::OnTextEntered)
 wxEND_EVENT_TABLE()
 
@@ -152,6 +164,49 @@ void mmNewAcctDialog::fillControls()
     m_bitmapButtons->SetBitmap(m_imageList->GetBitmap(selectedImage));
 
     m_accessInfo = m_account->ACCESSINFO;
+
+    if (Model_Account::type(m_account) == Model_Account::CREDIT_CARD)
+    {
+        Model_CreditCard::Data *card = Model_CreditCard::instance().get(m_account->ACCOUNTID);
+        Model_Billsdeposits::Data *bdCard = NULL;
+        wxChoice* itemHeldAcct = (wxChoice*)FindWindow(ID_DIALOG_NEWACCT_COMBO_HELDACCT);
+        wxChoice* itemCardType = (wxChoice*)FindWindow(ID_DIALOG_NEWACCT_COMBO_CARDTYPE);
+        wxTextCtrl* itemCardLimit = (wxTextCtrl*)FindWindow(ID_DIALOG_NEWACCT_TEXTCTRL_CARDLIMIT);
+        wxTextCtrl* itemCardRate = (wxTextCtrl*)FindWindow(ID_DIALOG_NEWACCT_TEXTCTRL_CARDINTERESTRATE);
+        wxCheckBox* itemCardAutoBal = (wxCheckBox*)FindWindow(ID_DIALOG_NEWACCT_TEXTCTRL_CARDAUTOBALANCE);
+        wxDatePickerCtrl* itemCardAutoBalDate = (wxDatePickerCtrl*)FindWindow(ID_DIALOG_NEWACCT_TEXTCTRL_CARDAUTOBALANCEDATE);
+        wxTextCtrl* itemCardAutoBalAmnt = (wxTextCtrl*)FindWindow(ID_DIALOG_NEWACCT_TEXTCTRL_CARDAUTOBALANCEAMNT);
+        if (card)
+        {
+            bdCard = Model_Billsdeposits::instance().get(Model_CreditCard::getRepeatingTransaction(card->ACCOUNTID, card->HELDAT));
+            for (unsigned int i = 0; i < itemHeldAcct->GetCount(); i++)
+            {
+                if ((int)itemHeldAcct->GetClientData(i) == card->HELDAT)
+                {
+                    itemHeldAcct->SetSelection(i);
+                    break;
+                }
+            }
+            itemCardType->SetSelection(card->CARDTYPE);
+            itemCardLimit->SetValue(Model_Currency::toString(card->CARDLIMIT, Model_Account::currency(m_account)));
+            itemCardRate->SetValue(Model_Currency::toString(card->RATE, Model_Account::currency(m_account)));
+        }
+        else
+        {
+            bdCard = Model_Billsdeposits::instance().get(Model_CreditCard::getRepeatingTransaction(m_account->ACCOUNTID));
+            itemCardType->SetSelection(Model_CreditCard::CHARGEALL);
+            itemCardLimit->SetValue(Model_Currency::toString(0.0, Model_Account::currency(m_account)));
+            itemCardRate->SetValue(Model_Currency::toString(0.0, Model_Account::currency(m_account)));
+            itemCardAutoBalAmnt->SetValue(Model_Currency::toString(0.0, Model_Account::currency(m_account)));
+        }
+        if (bdCard)
+        {
+            itemCardAutoBalDate->SetValue(Model_Billsdeposits::NEXTOCCURRENCEDATE(bdCard));
+            itemCardAutoBalAmnt->SetValue(Model_Currency::toString(bdCard->TRANSAMOUNT, Model_Account::currency(m_account)));
+        }
+        itemCardAutoBal->SetValue(bdCard ? true : false);
+        EnableCreditCardFields();
+    }
 }
 
 void mmNewAcctDialog::CreateControls()
@@ -228,6 +283,76 @@ void mmNewAcctDialog::CreateControls()
     m_notesCtrl = new wxTextCtrl(notes_tab, ID_DIALOG_NEWACCT_TEXTCTRL_NOTES, ""
         , wxDefaultPosition, wxSize(270, 180), wxTE_MULTILINE);
     notes_sizer->Add(m_notesCtrl, g_flagsExpand);
+
+    // Credit card data
+
+    if (Model_Account::type(m_account) == Model_Account::CREDIT_CARD)
+    {
+        wxPanel* card_tab = new wxPanel(acc_notebook, wxID_ANY);
+        acc_notebook->AddPage(card_tab, _("Credit Card"));
+        wxBoxSizer *card_sizer = new wxBoxSizer(wxVERTICAL);
+        card_tab->SetSizer(card_sizer);
+
+        wxFlexGridSizer* grid_sizer3 = new wxFlexGridSizer(0, 2, 0, 0);
+        grid_sizer3->AddGrowableCol(1, 1);
+        card_sizer->Add(grid_sizer3, g_flagsExpand);
+
+        grid_sizer3->Add(new wxStaticText(card_tab, wxID_STATIC, _("Held at:")), g_flags);
+
+        wxChoice* itemChoice7 = new wxChoice(card_tab, ID_DIALOG_NEWACCT_COMBO_HELDACCT);
+        for (const auto& acct : Model_Account::instance().find(Model_Account::ACCOUNTTYPE(Model_Account::all_type()[Model_Account::CHECKING])))
+            itemChoice7->Append(acct.ACCOUNTNAME, (void*)acct.id());
+        //itemChoice7->Connect(ID_DIALOG_NEWACCT_COMBO_HELDACCT, wxEVT_COMMAND_COMBOBOX_SELECTED,
+        //    wxCommandEventHandler(mmNewAcctDialog::OnCheckCreditCard), nullptr, this);
+        itemChoice7->SetToolTip(_("Specify the bank account where credit card is helded."));
+        grid_sizer3->Add(itemChoice7, g_flagsExpand);
+
+        grid_sizer3->Add(new wxStaticText(card_tab, wxID_STATIC, _("Card Type:")), g_flags);
+
+        wxChoice* itemChoice8 = new wxChoice(card_tab, ID_DIALOG_NEWACCT_COMBO_CARDTYPE);
+        for (const auto& type : Model_CreditCard::all_type())
+            itemChoice8->Append(wxGetTranslation(type), new wxStringClientData(type));
+        //itemChoice8->Connect(ID_DIALOG_NEWACCT_COMBO_CARDTYPE, wxEVT_COMMAND_COMBOBOX_SELECTED,
+        //    wxCommandEventHandler(mmNewAcctDialog::OnCheckCreditCard), nullptr, this);
+        itemChoice8->SetToolTip(_("Specify the credit card type."));
+        grid_sizer3->Add(itemChoice8, g_flagsExpand);
+
+        grid_sizer3->Add(new wxStaticText(card_tab, wxID_STATIC, _("Card Limit:")), g_flags);
+
+        wxTextCtrl* itemTextCtrl9 = new wxTextCtrl(card_tab
+            , ID_DIALOG_NEWACCT_TEXTCTRL_CARDLIMIT, "", wxDefaultPosition, wxDefaultSize, 0, mmCalcValidator());
+        itemTextCtrl9->SetToolTip(_("Enter the credit card limit. This is used to signal limit exceed when inserting transactions."));
+        grid_sizer3->Add(itemTextCtrl9, g_flagsExpand);
+
+        grid_sizer3->Add(new wxStaticText(card_tab, wxID_STATIC, _("Interest Rate:")), g_flags);
+
+        wxTextCtrl* itemTextCtrl10 = new wxTextCtrl(card_tab
+            , ID_DIALOG_NEWACCT_TEXTCTRL_CARDINTERESTRATE, "", wxDefaultPosition, wxDefaultSize, 0, mmCalcValidator());
+        itemTextCtrl10->SetToolTip(_("Enter the credit card interest rate. This is used only for credit cards with partial monthly refund."));
+        grid_sizer3->Add(itemTextCtrl10, g_flagsExpand);
+
+        wxCheckBox* itemCheckBox11 = new wxCheckBox(card_tab
+            , ID_DIALOG_NEWACCT_TEXTCTRL_CARDAUTOBALANCE
+            , _("Auto Balance"), wxDefaultPosition, wxDefaultSize, wxCHK_2STATE);
+        itemCheckBox11->SetToolTip(_("Specify if you want to insert a repeating transaction for monthly refund. This is used only for credit cards."));
+        grid_sizer3->AddSpacer(1);
+        grid_sizer3->Add(itemCheckBox11, g_flags);
+
+        grid_sizer3->Add(new wxStaticText(card_tab, wxID_STATIC, _("Balance Date")), g_flags);
+
+        wxDatePickerCtrl *itemDate1 = new wxDatePickerCtrl(card_tab, ID_DIALOG_NEWACCT_TEXTCTRL_CARDAUTOBALANCEDATE
+            , wxDefaultDateTime, wxDefaultPosition, wxSize(150, -1), wxDP_DROPDOWN | wxDP_SHOWCENTURY);
+        grid_sizer3->Add(itemDate1, g_flags);
+        itemDate1->SetToolTip(_("Specify the balance date of the credit card"));
+
+        grid_sizer3->Add(new wxStaticText(card_tab, wxID_STATIC, _("Balance amount:")), g_flags);
+
+        wxTextCtrl* itemTextCtrl11 = new wxTextCtrl(card_tab
+            , ID_DIALOG_NEWACCT_TEXTCTRL_CARDAUTOBALANCEAMNT, "", wxDefaultPosition, wxDefaultSize, 0, mmCalcValidator());
+        itemTextCtrl11->SetToolTip(_("Enter the balance amount of the credit card."));
+        grid_sizer3->Add(itemTextCtrl11, g_flagsExpand);
+    }
+
     //
 
     wxPanel* others_tab = new wxPanel(acc_notebook, wxID_ANY);
@@ -380,6 +505,73 @@ void mmNewAcctDialog::OnOk(wxCommandEvent& /*event*/)
 
     Model_Account::instance().save(m_account);
 
+    if (Model_Account::type(m_account) == Model_Account::CREDIT_CARD)
+    {
+        wxChoice* itemHeldAcct = (wxChoice*)FindWindow(ID_DIALOG_NEWACCT_COMBO_HELDACCT);
+        wxChoice* itemCardType = (wxChoice*)FindWindow(ID_DIALOG_NEWACCT_COMBO_CARDTYPE);
+        wxTextCtrl* itemCardLimit = (wxTextCtrl*)FindWindow(ID_DIALOG_NEWACCT_TEXTCTRL_CARDLIMIT);
+        wxTextCtrl* itemCardRate = (wxTextCtrl*)FindWindow(ID_DIALOG_NEWACCT_TEXTCTRL_CARDINTERESTRATE);
+        wxCheckBox* itemCardAutoBal = (wxCheckBox*)FindWindow(ID_DIALOG_NEWACCT_TEXTCTRL_CARDAUTOBALANCE);
+        wxDatePickerCtrl* itemCardAutoBalDate = (wxDatePickerCtrl*)FindWindow(ID_DIALOG_NEWACCT_TEXTCTRL_CARDAUTOBALANCEDATE);
+        wxTextCtrl* itemCardAutoBalAmnt = (wxTextCtrl*)FindWindow(ID_DIALOG_NEWACCT_TEXTCTRL_CARDAUTOBALANCEAMNT);
+        Model_CreditCard::Data *card = Model_CreditCard::instance().get(m_account->ACCOUNTID);
+        if (!card)
+            card = Model_CreditCard::instance().create();
+        card->ACCOUNTID = m_account->ACCOUNTID;
+        int curSel = itemHeldAcct->GetCurrentSelection();
+        if (curSel >= 0)
+            card->HELDAT = (int)itemHeldAcct->GetClientData(curSel);
+        else
+            card->HELDAT = -1;
+        card->CARDTYPE = itemCardType->GetSelection();
+        wxString value = itemCardLimit->GetValue().Trim();
+        if (!Model_Currency::fromString(value, card->CARDLIMIT, Model_Currency::instance().get(m_currencyID)))
+            card->CARDLIMIT = 0.0;
+        value = itemCardRate->GetValue().Trim();
+        if (!Model_Currency::fromString(value, card->RATE, Model_Currency::instance().get(m_currencyID)))
+            card->RATE = 0.0;
+
+        Model_CreditCard::instance().save(card);
+
+        // auto balance in repeating transactions
+        Model_Billsdeposits::Data *bdCard = Model_Billsdeposits::instance().get(Model_CreditCard::getRepeatingTransaction(card->ACCOUNTID, card->HELDAT));
+        if (itemCardAutoBal->GetValue())
+        {
+            double balanceAmount = 0.0;
+            wxDate balanceDate = itemCardAutoBalDate->GetValue();
+            value = itemCardAutoBalAmnt->GetValue().Trim();
+            if (!Model_Currency::fromString(value, balanceAmount, Model_Currency::instance().get(m_currencyID)))
+                balanceAmount = 0.0;
+            if (!bdCard)
+                bdCard = Model_Billsdeposits::instance().create();
+            bdCard->ACCOUNTID = card->HELDAT;
+            bdCard->TOACCOUNTID = card->ACCOUNTID;
+            bdCard->PAYEEID = card->HELDAT;
+            bdCard->TRANSCODE = Model_Billsdeposits::all_type()[Model_Billsdeposits::TRANSFER];
+            bdCard->TRANSAMOUNT = bdCard->TOTRANSAMOUNT = balanceAmount;
+            Model_Category::Data_Set category = Model_Category::instance().find(Model_Category::CATEGNAME(_("Credit Card")));
+            if (category.empty())
+            {
+                Model_Category::Data *newCat = Model_Category::instance().create();
+                newCat->CATEGNAME = _("Credit Card");
+                bdCard->CATEGID = Model_Category::instance().save(newCat);
+            }
+            else
+                bdCard->CATEGID = category[0].id();
+            if (bdCard->NEXTOCCURRENCEDATE != balanceDate.FormatISODate())
+            {
+                bdCard->TRANSDATE = bdCard->NEXTOCCURRENCEDATE = balanceDate.FormatISODate();
+                if (balanceDate < wxDate::Today())
+                    bdCard->NEXTOCCURRENCEDATE = Model_Billsdeposits::instance().nextOccurDate(Model_Billsdeposits::REPEAT_MONTHLY, 1, balanceDate).FormatISODate();
+            }
+            bdCard->REPEATS = BD_REPEATS_MULTIPLEX_BASE + Model_Billsdeposits::REPEAT_MONTHLY;
+            bdCard->NUMOCCURRENCES = -1;
+            Model_Billsdeposits::instance().save(bdCard);
+        }
+        else if (bdCard)
+            Model_Billsdeposits::instance().remove(bdCard->id());
+    }
+
     EndModal(wxID_OK);
     mmWebApp::MMEX_WebApp_UpdateAccount();
 }
@@ -427,5 +619,64 @@ void mmNewAcctDialog::OnTextEntered(wxCommandEvent& event)
         if (!currency)
             currency = Model_Currency::GetBaseCurrency();
         m_itemInitValue->Calculate();
+    }
+}
+
+void mmNewAcctDialog::OnCreditCardFields(wxCommandEvent& event)
+{
+    EnableCreditCardFields();
+}
+
+void mmNewAcctDialog::EnableCreditCardFields()
+{
+    wxChoice* itemHeldAcct = (wxChoice*)FindWindow(ID_DIALOG_NEWACCT_COMBO_HELDACCT);
+    wxChoice* itemCardType = (wxChoice*)FindWindow(ID_DIALOG_NEWACCT_COMBO_CARDTYPE);
+    wxTextCtrl* itemCardLimit = (wxTextCtrl*)FindWindow(ID_DIALOG_NEWACCT_TEXTCTRL_CARDLIMIT);
+    wxTextCtrl* itemCardRate = (wxTextCtrl*)FindWindow(ID_DIALOG_NEWACCT_TEXTCTRL_CARDINTERESTRATE);
+    wxCheckBox* itemCardAutoBal = (wxCheckBox*)FindWindow(ID_DIALOG_NEWACCT_TEXTCTRL_CARDAUTOBALANCE);
+    wxDatePickerCtrl* itemCardAutoBalDate = (wxDatePickerCtrl*)FindWindow(ID_DIALOG_NEWACCT_TEXTCTRL_CARDAUTOBALANCEDATE);
+    wxTextCtrl* itemCardAutoBalAmnt = (wxTextCtrl*)FindWindow(ID_DIALOG_NEWACCT_TEXTCTRL_CARDAUTOBALANCEAMNT);
+
+    // enable/disable field based on options
+    itemCardLimit->Enable(true);
+    itemCardRate->Enable(true);
+    itemCardAutoBal->Enable(true);
+    itemCardAutoBalDate->Enable(true);
+    itemCardAutoBalAmnt->Enable(true);
+    if (itemHeldAcct->GetSelection() == -1)
+    {
+        itemCardAutoBal->SetValue(false);
+        itemCardAutoBal->Enable(false);
+        itemCardAutoBalDate->Enable(false);
+        itemCardAutoBalAmnt->SetValue(Model_Currency::toString(0.0, Model_Account::currency(m_account)));
+        itemCardAutoBalAmnt->Enable(false);
+    }
+    switch (itemCardType->GetSelection())
+    {
+    case Model_CreditCard::NOCHARGE:
+        itemCardLimit->SetValue(Model_Currency::toString(0.0, Model_Account::currency(m_account)));
+        itemCardLimit->Enable(false);
+        itemCardRate->SetValue(Model_Currency::toString(0.0, Model_Account::currency(m_account)));
+        itemCardRate->Enable(false);
+        itemCardAutoBal->SetValue(false);
+        itemCardAutoBal->Enable(false);
+        itemCardAutoBalDate->Enable(false);
+        itemCardAutoBalAmnt->SetValue(Model_Currency::toString(0.0, Model_Account::currency(m_account)));
+        itemCardAutoBalAmnt->Enable(false);
+        break;
+    case Model_CreditCard::CHARGEPARTLY:
+        break;
+    case Model_CreditCard::CHARGEALL:
+        itemCardRate->SetValue(Model_Currency::toString(0.0, Model_Account::currency(m_account)));
+        itemCardRate->Enable(false);
+        itemCardAutoBalAmnt->SetValue(Model_Currency::toString(0.0, Model_Account::currency(m_account)));
+        itemCardAutoBalAmnt->Enable(false);
+        break;
+    }
+    if (!itemCardAutoBal->GetValue())
+    {
+        itemCardAutoBalDate->Enable(false);
+        itemCardAutoBalAmnt->SetValue(Model_Currency::toString(0.0, Model_Account::currency(m_account)));
+        itemCardAutoBalAmnt->Enable(false);
     }
 }

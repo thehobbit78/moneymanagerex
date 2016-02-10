@@ -301,6 +301,33 @@ struct SorterByBUDGETYEARNAME
     }
 };
 
+struct SorterByCARDID
+{ 
+    template<class DATA>
+    bool operator()(const DATA& x, const DATA& y)
+    {
+        return x.CARDID < y.CARDID;
+    }
+};
+
+struct SorterByCARDLIMIT
+{ 
+    template<class DATA>
+    bool operator()(const DATA& x, const DATA& y)
+    {
+        return x.CARDLIMIT < y.CARDLIMIT;
+    }
+};
+
+struct SorterByCARDTYPE
+{ 
+    template<class DATA>
+    bool operator()(const DATA& x, const DATA& y)
+    {
+        return x.CARDTYPE < y.CARDTYPE;
+    }
+};
+
 struct SorterByCATEGID
 { 
     template<class DATA>

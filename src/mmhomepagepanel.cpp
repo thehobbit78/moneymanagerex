@@ -37,6 +37,7 @@ Copyright (C) 2014 Nikolay
 #include "model/Model_Stock.h"
 #include "model/Model_Billsdeposits.h"
 #include "model/Model_Category.h"
+#include "model/Model_CreditCard.h"
 
 #include "cajun/json/elements.h"
 #include "cajun/json/reader.h"
@@ -369,6 +370,17 @@ wxString htmlWidgetBillsAndDeposits::getHTMLText()
         }   
         const auto *account = Model_Account::instance().get(entry.ACCOUNTID);
         double amount = (Model_Billsdeposits::type(entry) == Model_Billsdeposits::DEPOSIT ? entry.TRANSAMOUNT : -entry.TRANSAMOUNT);
+        if (Model_Billsdeposits::type(entry) == Model_Billsdeposits::TRANSFER && Model_Account::type(account) == Model_Account::CHECKING)
+        {
+            const auto *card = Model_CreditCard::instance().get(entry.TOACCOUNTID);
+            if (card && card->CARDTYPE == Model_CreditCard::CHARGEALL)
+            {
+                wxDate date = Model_Billsdeposits::TRANSDATE(entry);
+                if (date.GetDay() != date.GetLastMonthDay(date.GetMonth(), date.GetYear()).GetDay())
+                    date -= wxDateSpan::Months(1);
+                amount = Model_CreditCard::getCardBalanceAt(entry.TOACCOUNTID, date);
+            }
+        }
         bd_days.push_back(std::make_tuple(daysPayment, payeeStr, daysRemainingStr, amount, account));
     }   
 

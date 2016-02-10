@@ -96,6 +96,7 @@
 #include "model/Model_StockHistory.h"
 #include "model/Model_Subcategory.h"
 #include "model/Model_Usage.h"
+#include "model/Model_CreditCard.h"
 
 #include "search/Search.h"
 
@@ -1645,6 +1646,7 @@ void mmGUIFrame::InitializeModelTables()
     m_all_models.push_back(&Model_Stock::instance(m_db.get()));
     m_all_models.push_back(&Model_StockHistory::instance(m_db.get()));
     m_all_models.push_back(&Model_Account::instance(m_db.get()));
+    m_all_models.push_back(&Model_CreditCard::instance(m_db.get()));
     m_all_models.push_back(&Model_Payee::instance(m_db.get()));
     m_all_models.push_back(&Model_Checking::instance(m_db.get()));
     m_all_models.push_back(&Model_Currency::instance(m_db.get()));

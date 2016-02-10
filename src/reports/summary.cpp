@@ -210,6 +210,7 @@ wxString mmReportSummaryByDate::getHTMLText()
     std::vector<std::map<wxDate, double>::const_iterator>   arIt(balanceMapVec.size());
     std::vector<double> arBalance(balanceMapVec.size());
     std::vector<wxString>   totBalanceData;
+    std::vector<wxDate> arDates;
 
     hb.init();
     hb.addDivContainer();
@@ -272,11 +273,17 @@ wxString mmReportSummaryByDate::getHTMLText()
     for (const auto& acctMap: balanceMapVec)
         arIt[i++] = acctMap.begin();
 
+    //  prepare the dates array
     while (dateStart <= dateEnd)
     {
         if (mode_ == 0 )
             dateStart.SetToLastMonthDay(dateStart.GetMonth(), dateStart.GetYear());
+        arDates.push_back(dateStart);
+        dateStart += span;
+    }
 
+    for (const auto & dateStart : arDates)
+    {
         i = 0;
         for (auto& account: Model_Account::instance().all())
         {
@@ -290,7 +297,13 @@ wxString mmReportSummaryByDate::getHTMLText()
                 }
             }
             else if (Model_Account::type(account) == Model_Account::INVESTMENT)
-                arBalance[i] = GetDailyBalanceAt(&account, dateStart);
+            {
+                double	convRate = 1.0;
+                Model_Currency::Data* currency = Model_Account::currency(account);
+                if (currency)
+                    convRate = currency->BASECONVRATE;
+                arBalance[i] = Model_Stock::instance().getDailyBalanceAt(&account, dateStart) * convRate;
+            }
             i++;
         }
 
@@ -315,8 +328,6 @@ wxString mmReportSummaryByDate::getHTMLText()
             balancePerDay[4] += balancePerDay[j];
         }
         totBalanceData.push_back(Model_Currency::toCurrency(balancePerDay[j]));
-
-        dateStart += span;
     }
 
     hb.startTbody();
@@ -349,17 +360,4 @@ wxString mmReportSummaryByDate::getHTMLText()
     hb.end();
 
     return hb.getHTMLText();
-}
-
-double mmReportSummaryByDate::GetDailyBalanceAt(const Model_Account::Data *account, const wxDate& date)
-{
-    double	convRate = 1.0;
-
-    if (account)
-    {
-        Model_Currency::Data* currency = Model_Account::currency(account);
-        convRate = currency->BASECONVRATE;
-    }
-
-    return Model_Stock::instance().getDailyBalanceAt(account, date) * convRate;
 }

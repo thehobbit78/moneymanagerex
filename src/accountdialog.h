@@ -41,6 +41,7 @@ public:
 
 private:
     void CreateControls();
+    void EnableCreditCardFields();
 
     // utility functions
     void OnOk(wxCommandEvent& event);
@@ -49,7 +50,8 @@ private:
     void fillControls(void);
     void OnCustonImage(wxCommandEvent& event);
     void OnTextEntered(wxCommandEvent& event);
-	void OnAttachments(wxCommandEvent& event);
+	 void OnAttachments(wxCommandEvent& event);
+    void OnCreditCardFields(wxCommandEvent& event);
 
     void OnImageButton(wxCommandEvent& event);
 

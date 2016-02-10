@@ -38,7 +38,7 @@
 #include "model/Model_Category.h"
 #include "model/Model_CustomFieldData.h"
 #include "model/Model_Subcategory.h"
-
+#include "model/Model_CreditCard.h"
 #include <wx/numformatter.h>
 
 wxIMPLEMENT_DYNAMIC_CLASS(mmTransDialog, wxDialog);
@@ -1020,6 +1020,12 @@ void mmTransDialog::OnOk(wxCommandEvent& event)
     const Model_Checking::Data& tran(*r);
     Model_Checking::Full_Data trx(tran);
     wxLogDebug("%s", trx.to_json());
+
+    // if it's a credit card account, check monthly limit
+    const Model_CreditCard::Data *cardAcct = Model_CreditCard::instance().get(r->ACCOUNTID);
+    if (cardAcct && cardAcct->CARDLIMIT > 0.0 && fabs(Model_CreditCard::getCardBalanceAt(cardAcct->ACCOUNTID, dpc_->GetValue())) >= cardAcct->CARDLIMIT)
+        wxMessageBox(_("Credit Card limit has reached!"), _("Credit Card"), wxOK | wxICON_WARNING);
+
     EndModal(wxID_OK);
 }
 

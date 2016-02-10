@@ -1,3 +1,4 @@
+"C:\Program Files (x86)\Poedit\GettextTools\bin\msgfmt.exe" -o ..\..\po\italian.mo ..\..\po\italian.po
 xcopy /Y /E /I ..\..\resources\*.wav %1res
 xcopy /Y /E /I ..\..\resources\*.css %1res
 xcopy /Y /E /I ..\..\resources\*.htt %1res
