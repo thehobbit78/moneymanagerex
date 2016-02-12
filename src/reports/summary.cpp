@@ -204,7 +204,7 @@ wxString mmReportSummaryByDate::getHTMLText()
     double          balancePerDay[5];
     mmHTMLBuilder   hb;
     wxString        datePrec;
-    wxDate			date, dateStart = wxDate::Now(), dateEnd = wxDate::Now();
+    wxDate          date, dateStart = wxDate::Now(), dateEnd = wxDate::Now();
     wxDateSpan      span;
     std::vector<balanceMap> balanceMapVec(Model_Account::instance().all().size());
     std::vector<std::map<wxDate, double>::const_iterator>   arIt(balanceMapVec.size());
