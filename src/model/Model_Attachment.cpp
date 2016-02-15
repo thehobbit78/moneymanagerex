@@ -21,12 +21,12 @@
 
 const std::vector<std::pair<Model_Attachment::REFTYPE, wxString> > Model_Attachment::REFTYPE_CHOICES =
 {
-    std::make_pair(Model_Attachment::TRANSACTION, wxString("Transaction")),
-    std::make_pair(Model_Attachment::STOCK, wxString("Stock")),
-    std::make_pair(Model_Attachment::ASSET, wxString("Asset")),
-    std::make_pair(Model_Attachment::BANKACCOUNT, wxString("BankAccount")),
-    std::make_pair(Model_Attachment::BILLSDEPOSIT, wxString("RecurringTransaction")),
-    std::make_pair(Model_Attachment::PAYEE, wxString("Payee"))
+    std::make_pair(Model_Attachment::TRANSACTION, wxString(wxTRANSLATE("Transaction"))),
+    std::make_pair(Model_Attachment::STOCK, wxString(wxTRANSLATE("Stock"))),
+    std::make_pair(Model_Attachment::ASSET, wxString(wxTRANSLATE("Asset"))),
+    std::make_pair(Model_Attachment::BANKACCOUNT, wxString(wxTRANSLATE("BankAccount"))),
+    std::make_pair(Model_Attachment::BILLSDEPOSIT, wxString(wxTRANSLATE("RecurringTransaction"))),
+    std::make_pair(Model_Attachment::PAYEE, wxString(wxTRANSLATE("Payee")))
 };
 
 Model_Attachment::Model_Attachment()
@@ -56,6 +56,15 @@ Model_Attachment& Model_Attachment::instance(wxSQLite3Database* db)
 Model_Attachment& Model_Attachment::instance()
 {
     return Singleton<Model_Attachment>::instance();
+}
+
+/** Return all attachments references */
+wxArrayString Model_Attachment::all_type()
+{
+    wxArrayString types;
+    for (const auto& item : REFTYPE_CHOICES)
+        types.Add(item.second);
+    return types;
 }
 
 /** Return a dataset with attachments linked to a specific object */
