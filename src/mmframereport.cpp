@@ -126,7 +126,8 @@ void mmGUIFrame::updateReportNavigation(wxTreeItemId& reports, wxTreeItemId& bud
     navTreeCtrl_->SetItemData(myusage, new mmTreeItemData(new mmReportMyUsage()));
 
     //////////////////////////////////////////////////////////////////
-    wxTreeItemId reportsSummary = navTreeCtrl_->AppendItem(reports, _("Monthly Summary of Accounts"), 4, 4);
+    wxTreeItemId reportsSummary = navTreeCtrl_->AppendItem(reports
+        , _("Monthly Summary of Accounts"), img::PIECHART_PNG, img::PIECHART_PNG);
     navTreeCtrl_->SetItemData(reportsSummary, new mmTreeItemData("Monthly Summary of Accounts"
         , new mmReportSummaryByDate(this, 0)));
 
