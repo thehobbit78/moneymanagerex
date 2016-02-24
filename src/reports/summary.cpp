@@ -21,6 +21,7 @@
 #include "htmlbuilder.h"
 #include "model/Model_Account.h"
 #include "model/Model_Currency.h"
+#include "model/Model_CurrencyHistory.h"
 #include "model/Model_Asset.h"
 #include "model/Model_Stock.h"
 #include "model/Model_StockHistory.h"
@@ -332,14 +333,14 @@ wxString mmReportSummaryByDate::getHTMLText()
             //  in balanceMapVec ci sono i totali dei movimenti giorno per giorno
             const Model_Currency::Data* currency = Model_Account::currency(account);
             for (const auto& tran: Model_Account::transaction(account))
-                balanceMapVec[i][Model_Checking::TRANSDATE(tran)] += Model_Checking::balance(tran, account.ACCOUNTID) * currency->BASECONVRATE;
+                balanceMapVec[i][Model_Checking::TRANSDATE(tran)] += Model_Checking::balance(tran, account.ACCOUNTID) * Model_CurrencyHistory::getDayRate(currency->id(), tran.TRANSDATE);
             if (Model_Account::type(account) != Model_Account::TERM && balanceMapVec[i].size())
             {
                 date = balanceMapVec[i].begin()->first;
                 if (date.IsEarlierThan(dateStart))
                     dateStart = date;
             }
-            arBalance[i] = account.INITIALBAL * currency->BASECONVRATE;
+            arBalance[i] = account.INITIALBAL * Model_CurrencyHistory::getDayRate(currency->id(), dateStart.FormatISODate());
         }
         else
         {
@@ -416,7 +417,7 @@ wxString mmReportSummaryByDate::getHTMLText()
                 double	convRate = 1.0;
                 Model_Currency::Data* currency = Model_Account::currency(account);
                 if (currency)
-                    convRate = currency->BASECONVRATE;
+                    convRate = Model_CurrencyHistory::getDayRate(currency->id(), dateStart.FormatISODate());
                 arBalance[i] = arHistory.getDailyBalanceAt(&account, dateStart) * convRate;
             }
             i++;
