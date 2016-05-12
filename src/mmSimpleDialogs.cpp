@@ -71,7 +71,7 @@ bool mmDialogComboBoxAutocomplete::Create(wxWindow* parent, wxWindowID id,
     const wxString& caption, const wxPoint& pos, const wxSize& size, long style)
 {
     wxDialog::Create(parent, id, caption, pos, size, style);
-    const wxSizerFlags flags = wxSizerFlags().Align(wxALIGN_CENTER | wxALIGN_CENTER_VERTICAL).Border(wxLEFT | wxRIGHT, 15);
+    const wxSizerFlags flags = wxSizerFlags().Align(wxALIGN_CENTER).Border(wxLEFT | wxRIGHT, 15);
 
     wxBoxSizer* Sizer = new wxBoxSizer(wxVERTICAL);
     this->SetSizer(Sizer);
@@ -160,10 +160,13 @@ const wxString mmDialogs::mmSelectLanguage(mmGUIApp *app, wxWindow* window, bool
 
     if (!forced_show_dlg)
     {
-        const wxString lang = Model_Setting::instance().GetStringSetting(LANGUAGE_PARAMETER, "english");
+//TODO: Determine how this functions using class
+        //wxString lang = Model_Setting::instance().GetStringSetting(LANGUAGE_PARAMETER, "english");
+
+        wxString lang = Option::instance().Language(true);
         if (!lang.empty() && locale.AddCatalog(lang) && locale.IsLoaded(lang))
         {
-            mmOptions::instance().language_ = lang;
+            Option::instance().Language(lang);
             return lang;
         }
     }
@@ -173,8 +176,8 @@ const wxString mmDialogs::mmSelectLanguage(mmGUIApp *app, wxWindow* window, bool
     {
         bool ok = locale.AddCatalog(lang) && locale.IsLoaded(lang);
         if (!ok)  lang.clear(); // bad .mo file
-        mmOptions::instance().language_ = lang;
-        Model_Setting::instance().Set(LANGUAGE_PARAMETER, lang);
+        Option::instance().Language(lang);
+       // Model_Setting::instance().Set(LANGUAGE_PARAMETER, lang);
     }
 
     return lang;

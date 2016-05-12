@@ -16,14 +16,14 @@
  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  ********************************************************/
 #pragma once
-#include "mmOption.h"
+#include "option.h"
 
 class CommitCallbackHook : public wxSQLite3Hook
 {
 public:
     virtual bool CommitCallback()
     {
-        mmOptions::instance().databaseUpdated_ = true;
+        Option::instance().DatabaseUpdated(true);
         return false;
     }
 };

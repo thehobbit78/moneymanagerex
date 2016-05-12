@@ -16,25 +16,25 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ********************************************************/
 
-#include "mmOptionMiscSettings.h"
-#include "mmOption.h"
+#include "optionsettingsmisc.h"
+#include "option.h"
 
 #include "model/Model_Checking.h"
 
 #include <wx/spinctrl.h>
 
 /*******************************************************/
-wxBEGIN_EVENT_TABLE(mmOptionMiscSettings, wxPanel)
-    EVT_CHECKBOX(ID_DIALOG_OPTIONS_CHK_BACKUP, mmOptionMiscSettings::OnBackupChanged)
-    EVT_CHECKBOX(ID_DIALOG_OPTIONS_CHK_BACKUP_UPDATE, mmOptionMiscSettings::OnBackupChanged)
+wxBEGIN_EVENT_TABLE(OptionSettingsMisc, wxPanel)
+    EVT_CHECKBOX(ID_DIALOG_OPTIONS_CHK_BACKUP, OptionSettingsMisc::OnBackupChanged)
+    EVT_CHECKBOX(ID_DIALOG_OPTIONS_CHK_BACKUP_UPDATE, OptionSettingsMisc::OnBackupChanged)
 wxEND_EVENT_TABLE()
 /*******************************************************/
 
-mmOptionMiscSettings::mmOptionMiscSettings()
+OptionSettingsMisc::OptionSettingsMisc()
 {
 }
 
-mmOptionMiscSettings::mmOptionMiscSettings(wxWindow *parent
+OptionSettingsMisc::OptionSettingsMisc(wxWindow *parent
     , wxWindowID id
     , const wxPoint &pos
     , const wxSize &size
@@ -44,11 +44,11 @@ mmOptionMiscSettings::mmOptionMiscSettings(wxWindow *parent
     Create();
 }
 
-mmOptionMiscSettings::~mmOptionMiscSettings()
+OptionSettingsMisc::~OptionSettingsMisc()
 {
 }
 
-void mmOptionMiscSettings::Create()
+void OptionSettingsMisc::Create()
 {
     wxBoxSizer* othersPanelSizer = new wxBoxSizer(wxVERTICAL);
     SetSizer(othersPanelSizer);
@@ -56,7 +56,7 @@ void mmOptionMiscSettings::Create()
     wxStaticText* itemStaticTextURL = new wxStaticText(this, wxID_STATIC, _("Stock Quote Web Page"));
     SetBoldFont(itemStaticTextURL);
 
-    othersPanelSizer->Add(itemStaticTextURL, g_flags);
+    othersPanelSizer->Add(itemStaticTextURL, g_flagsV);
 
     wxString stockURL = Model_Infotable::instance().GetStringInfo("STOCKURL", mmex::weblink::DefStockUrl);
     wxTextCtrl* itemTextCtrURL = new wxTextCtrl(this
@@ -79,19 +79,19 @@ void mmOptionMiscSettings::Create()
     wxChoice* defaultDateChoice = new wxChoice(this
         , ID_DIALOG_OPTIONS_DEFAULT_TRANSACTION_DATE
         , wxDefaultPosition, wxSize(140, -1), defaultValues_);
-    defaultDateChoice->SetSelection(mmIniOptions::instance().transDateDefault_);
+    defaultDateChoice->SetSelection(Option::instance().TransDateDefault());
 
     defaultValues_[1] = (_("Last used for payee"));
     defaultValues_.Add(_("Unused"));
     wxChoice* defaultPayeeChoice = new wxChoice(this
         , ID_DIALOG_OPTIONS_DEFAULT_TRANSACTION_PAYEE
         , wxDefaultPosition, wxSize(140, -1), defaultValues_);
-    defaultPayeeChoice->SetSelection(mmIniOptions::instance().transPayeeSelectionNone_);
+    defaultPayeeChoice->SetSelection(Option::instance().TransPayeeSelectionNone());
 
     wxChoice* defaultCategoryChoice = new wxChoice(this
         , ID_DIALOG_OPTIONS_DEFAULT_TRANSACTION_CATEGORY
         , wxDefaultPosition, defaultPayeeChoice->GetSize(), defaultValues_);
-    defaultCategoryChoice->SetSelection(mmIniOptions::instance().transCategorySelectionNone_);
+    defaultCategoryChoice->SetSelection(Option::instance().TransCategorySelectionNone());
 
     wxChoice* default_status = new wxChoice(this
         , ID_DIALOG_OPTIONS_DEFAULT_TRANSACTION_STATUS
@@ -100,18 +100,18 @@ void mmOptionMiscSettings::Create()
     for (const auto& i : Model_Checking::all_status())
         default_status->Append(wxGetTranslation(i), new wxStringClientData(i));
 
-    default_status->SetSelection(mmIniOptions::instance().transStatusReconciled_);
+    default_status->SetSelection(Option::instance().TransStatusReconciled());
 
     wxFlexGridSizer* newTransflexGridSizer = new wxFlexGridSizer(0, 2, 0, 0);
     transSettingsStaticBoxSizer->Add(newTransflexGridSizer);
-    newTransflexGridSizer->Add(new wxStaticText(this, wxID_STATIC, _("Default Date:")), g_flags);
-    newTransflexGridSizer->Add(defaultDateChoice, g_flags);
-    newTransflexGridSizer->Add(new wxStaticText(this, wxID_STATIC, _("Default Payee:")), g_flags);
-    newTransflexGridSizer->Add(defaultPayeeChoice, g_flags);
-    newTransflexGridSizer->Add(new wxStaticText(this, wxID_STATIC, _("Default Category:")), g_flags);
-    newTransflexGridSizer->Add(defaultCategoryChoice, g_flags);
-    newTransflexGridSizer->Add(new wxStaticText(this, wxID_STATIC, _("Default Status:")), g_flags);
-    newTransflexGridSizer->Add(default_status, g_flags);
+    newTransflexGridSizer->Add(new wxStaticText(this, wxID_STATIC, _("Default Date:")), g_flagsH);
+    newTransflexGridSizer->Add(defaultDateChoice, g_flagsH);
+    newTransflexGridSizer->Add(new wxStaticText(this, wxID_STATIC, _("Default Payee:")), g_flagsH);
+    newTransflexGridSizer->Add(defaultPayeeChoice, g_flagsH);
+    newTransflexGridSizer->Add(new wxStaticText(this, wxID_STATIC, _("Default Category:")), g_flagsH);
+    newTransflexGridSizer->Add(defaultCategoryChoice, g_flagsH);
+    newTransflexGridSizer->Add(new wxStaticText(this, wxID_STATIC, _("Default Status:")), g_flagsH);
+    newTransflexGridSizer->Add(default_status, g_flagsH);
 
     //----------------------------------------------
     //a bit more space visual appearance
@@ -132,14 +132,14 @@ void mmOptionMiscSettings::Create()
     backupCheckBox->SetValue(GetIniDatabaseCheckboxValue("BACKUPDB", false));
     backupCheckBox->SetToolTip(_("When MMEX Starts,\n"
         "creates the backup database: dbFile_start_YYYY-MM-DD.ext."));
-    backupStaticBoxSizer->Add(backupCheckBox, g_flags);
+    backupStaticBoxSizer->Add(backupCheckBox, g_flagsV);
 
     wxCheckBox* backupUpdateCheckBox = new wxCheckBox(this, ID_DIALOG_OPTIONS_CHK_BACKUP_UPDATE
         , _("Backup database on exit."), wxDefaultPosition, wxDefaultSize, wxCHK_2STATE);
     backupUpdateCheckBox->SetValue(GetIniDatabaseCheckboxValue("BACKUPDB_UPDATE", true));
     backupUpdateCheckBox->SetToolTip(_("When MMEX shuts down and changes made to database,\n"
         "creates or updates the backup database: dbFile_update_YYYY-MM-DD.ext."));
-    backupStaticBoxSizer->Add(backupUpdateCheckBox, g_flags);
+    backupStaticBoxSizer->Add(backupUpdateCheckBox, g_flagsV);
 
     int max = Model_Setting::instance().GetIntSetting("MAX_BACKUP_FILES", 4);
     m_max_files = new wxSpinCtrl(this, wxID_ANY
@@ -148,8 +148,8 @@ void mmOptionMiscSettings::Create()
     m_max_files->SetToolTip(_("Specify max number of backup files"));
 
     wxFlexGridSizer* flex_sizer2 = new wxFlexGridSizer(0, 2, 0, 0);
-    flex_sizer2->Add(new wxStaticText(this, wxID_STATIC, _("Max Files")), g_flags);
-    flex_sizer2->Add(m_max_files, g_flags);
+    flex_sizer2->Add(new wxStaticText(this, wxID_STATIC, _("Max Files")), g_flagsH);
+    flex_sizer2->Add(m_max_files, g_flagsH);
     backupStaticBoxSizer->Add(flex_sizer2);
 
     //CSV Import
@@ -161,27 +161,27 @@ void mmOptionMiscSettings::Create()
 
     othersPanelSizer->Add(csvStaticBoxSizer, wxSizerFlags(g_flagsExpand).Proportion(0));
     wxFlexGridSizer* csvStaticBoxSizerGrid = new wxFlexGridSizer(0, 2, 0, 10);
-    csvStaticBoxSizer->Add(csvStaticBoxSizerGrid, g_flags);
+    csvStaticBoxSizer->Add(csvStaticBoxSizerGrid, g_flagsV);
 
-    csvStaticBoxSizerGrid->Add(new wxStaticText(this, wxID_STATIC, _("Delimiter")), g_flags);
+    csvStaticBoxSizerGrid->Add(new wxStaticText(this, wxID_STATIC, _("Delimiter")), g_flagsH);
     wxTextCtrl* textDelimiter4 = new wxTextCtrl(this
         , ID_DIALOG_OPTIONS_TEXTCTRL_DELIMITER4, delimiter);
     textDelimiter4->SetToolTip(_("Specify the delimiter to use when importing/exporting CSV files"));
     textDelimiter4->SetMaxLength(1);
-    csvStaticBoxSizerGrid->Add(textDelimiter4, g_flags);
+    csvStaticBoxSizerGrid->Add(textDelimiter4, g_flagsH);
 
     wxCommandEvent evt;
-    mmOptionMiscSettings::OnBackupChanged(evt);
+    OptionSettingsMisc::OnBackupChanged(evt);
 }
 
-void mmOptionMiscSettings::OnBackupChanged(wxCommandEvent& event)
+void OptionSettingsMisc::OnBackupChanged(wxCommandEvent& event)
 {
     wxCheckBox* ChkBackup = (wxCheckBox*)FindWindow(ID_DIALOG_OPTIONS_CHK_BACKUP);
     wxCheckBox* ChkBackupUpdate = (wxCheckBox*)FindWindow(ID_DIALOG_OPTIONS_CHK_BACKUP_UPDATE);
     m_max_files->Enable(ChkBackup->GetValue() || ChkBackupUpdate->GetValue());
 }
 
-void mmOptionMiscSettings::SaveStocksUrl()
+void OptionSettingsMisc::SaveStocksUrl()
 {
     wxTextCtrl* url = (wxTextCtrl*)FindWindow(ID_DIALOG_OPTIONS_TEXTCTRL_STOCKURL);
     wxString stockURL = url->GetValue();
@@ -197,23 +197,19 @@ void mmOptionMiscSettings::SaveStocksUrl()
     }
 }
 
-void mmOptionMiscSettings::SaveSettings()
+void OptionSettingsMisc::SaveSettings()
 {
     wxChoice* itemChoice = (wxChoice*)FindWindow(ID_DIALOG_OPTIONS_DEFAULT_TRANSACTION_PAYEE);
-    mmIniOptions::instance().transPayeeSelectionNone_ = itemChoice->GetSelection();
-    Model_Setting::instance().Set("TRANSACTION_PAYEE_NONE", itemChoice->GetSelection());
+    Option::instance().TransPayeeSelectionNone(itemChoice->GetSelection());
 
     itemChoice = (wxChoice*)FindWindow(ID_DIALOG_OPTIONS_DEFAULT_TRANSACTION_CATEGORY);
-    mmIniOptions::instance().transCategorySelectionNone_ = itemChoice->GetSelection();
-    Model_Setting::instance().Set("TRANSACTION_CATEGORY_NONE", itemChoice->GetSelection());
+    Option::instance().TransCategorySelectionNone(itemChoice->GetSelection());
 
     itemChoice = (wxChoice*)FindWindow(ID_DIALOG_OPTIONS_DEFAULT_TRANSACTION_STATUS);
-    mmIniOptions::instance().transStatusReconciled_ = itemChoice->GetSelection();
-    Model_Setting::instance().Set("TRANSACTION_STATUS_RECONCILED", itemChoice->GetSelection());
+    Option::instance().TransStatusReconciled(itemChoice->GetSelection());
 
     itemChoice = (wxChoice*)FindWindow(ID_DIALOG_OPTIONS_DEFAULT_TRANSACTION_DATE);
-    mmIniOptions::instance().transDateDefault_ = itemChoice->GetSelection();
-    Model_Setting::instance().Set("TRANSACTION_DATE_DEFAULT", itemChoice->GetSelection());
+    Option::instance().TransDateDefault(itemChoice->GetSelection());
 
     SaveStocksUrl();
 

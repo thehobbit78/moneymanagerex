@@ -16,7 +16,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ********************************************************/
 
-#include "mmOptionGeneralSettings.h"
+#include "optionsettingsgeneral.h"
 #include "maincurrencydialog.h"
 #include "mmSimpleDialogs.h"
 #include "util.h"
@@ -26,18 +26,18 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <wx/spinctrl.h>
 
 /*******************************************************/
-wxBEGIN_EVENT_TABLE(mmOptionGeneralSettings, wxPanel)
-    EVT_BUTTON(ID_DIALOG_OPTIONS_BUTTON_CURRENCY, mmOptionGeneralSettings::OnCurrency)
-    EVT_CHOICE(ID_DIALOG_OPTIONS_WXCHOICE_DATE, mmOptionGeneralSettings::OnDateFormatChanged)
-    EVT_BUTTON(ID_DIALOG_OPTIONS_BUTTON_LANGUAGE, mmOptionGeneralSettings::OnLanguageChanged)
+wxBEGIN_EVENT_TABLE(OptionSettingsGeneral, wxPanel)
+    EVT_BUTTON(ID_DIALOG_OPTIONS_BUTTON_CURRENCY, OptionSettingsGeneral::OnCurrency)
+    EVT_CHOICE(ID_DIALOG_OPTIONS_WXCHOICE_DATE, OptionSettingsGeneral::OnDateFormatChanged)
+    EVT_BUTTON(ID_DIALOG_OPTIONS_BUTTON_LANGUAGE, OptionSettingsGeneral::OnLanguageChanged)
 wxEND_EVENT_TABLE()
 /*******************************************************/
 
-mmOptionGeneralSettings::mmOptionGeneralSettings()
+OptionSettingsGeneral::OptionSettingsGeneral()
 {
 }
 
-mmOptionGeneralSettings::mmOptionGeneralSettings(wxWindow *parent, mmGUIApp* app
+OptionSettingsGeneral::OptionSettingsGeneral(wxWindow *parent, mmGUIApp* app
     , wxWindowID id
     , const wxPoint &pos
     , const wxSize &size
@@ -45,17 +45,17 @@ mmOptionGeneralSettings::mmOptionGeneralSettings(wxWindow *parent, mmGUIApp* app
 {
     wxPanel::Create(parent, id, pos, size, style, name);
     m_app = app;
-    m_currency_id = Model_Infotable::instance().GetBaseCurrencyId();
-    m_date_format = Model_Infotable::instance().DateFormat();
+    m_currency_id = Option::instance().BaseCurrency();
+    m_date_format = Option::instance().DateFormat();
 
     Create();
 }
 
-mmOptionGeneralSettings::~mmOptionGeneralSettings()
+OptionSettingsGeneral::~OptionSettingsGeneral()
 {
 }
 
-void mmOptionGeneralSettings::Create()
+void OptionSettingsGeneral::Create()
 {
     wxBoxSizer* generalPanelSizer = new wxBoxSizer(wxVERTICAL);
     SetSizer(generalPanelSizer);
@@ -66,7 +66,7 @@ void mmOptionGeneralSettings::Create()
 
     wxStaticBoxSizer* headerStaticBoxSizer = new wxStaticBoxSizer(headerStaticBox, wxHORIZONTAL);
 
-    headerStaticBoxSizer->Add(new wxStaticText(this, wxID_STATIC, _("User Name")), g_flags);
+    headerStaticBoxSizer->Add(new wxStaticText(this, wxID_STATIC, _("User Name")), g_flagsH);
 
     wxString userName = Model_Infotable::instance().GetStringInfo("USERNAME", "");
     wxTextCtrl* userNameTextCtr = new wxTextCtrl(this, ID_DIALOG_OPTIONS_TEXTCTRL_USERNAME
@@ -86,7 +86,7 @@ void mmOptionGeneralSettings::Create()
         , m_current_language.Left(1).Upper() + m_current_language.SubString(1, m_current_language.Len())
         , wxDefaultPosition, wxSize(150, -1), 0);
     languageButton->SetToolTip(_("Specify the language to use"));
-    languageStaticBoxSizer->Add(languageButton, g_flags);
+    languageStaticBoxSizer->Add(languageButton, g_flagsH);
 
     // Currency Settings
     wxStaticBox* currencyStaticBox = new wxStaticBox(this, wxID_STATIC, _("Currency"));
@@ -95,7 +95,7 @@ void mmOptionGeneralSettings::Create()
     SetBoldFont(currencyStaticBox);
     generalPanelSizer->Add(currencyStaticBoxSizer, wxSizerFlags(g_flagsExpand).Proportion(0));
 
-    currencyStaticBoxSizer->Add(new wxStaticText(this, wxID_STATIC, _("Base Currency")), g_flags);
+    currencyStaticBoxSizer->Add(new wxStaticText(this, wxID_STATIC, _("Base Currency")), g_flagsH);
 
     wxString currName = _("Set Currency");
     Model_Currency::Data* currency = Model_Currency::instance().get(m_currency_id);
@@ -103,9 +103,9 @@ void mmOptionGeneralSettings::Create()
         currName = currency->CURRENCYNAME;
     wxButton* baseCurrencyButton = new wxButton(this, ID_DIALOG_OPTIONS_BUTTON_CURRENCY
         , currName, wxDefaultPosition, wxDefaultSize);
-    baseCurrencyButton->SetToolTip(_("Sets the default currency for the database."));
-    currencyStaticBoxSizer->Add(baseCurrencyButton, g_flags);
-    currencyStaticBoxSizer->Add(new wxStaticText(this, wxID_STATIC, _("Right click on currency and choose 'Set as Base Currency'")), g_flags);
+    baseCurrencyButton->SetToolTip(_("Sets the database default Currency using the 'Currency Dialog'"));
+    currencyStaticBoxSizer->Add(baseCurrencyButton, g_flagsH);
+    currencyStaticBoxSizer->Add(new wxStaticText(this, wxID_STATIC, _("Right click and select 'Set as Base Currency' in 'Currency Dialog'")), g_flagsH);
 
     // Date Format Settings
     wxStaticBox* dateFormatStaticBox = new wxStaticBox(this, wxID_STATIC, _("Date Format"));
@@ -119,14 +119,14 @@ void mmOptionGeneralSettings::Create()
         m_date_format_choice->Append(i.second, new wxStringClientData(i.first));
         if (m_date_format == i.first) m_date_format_choice->SetStringSelection(i.second);
     }
-    dateFormatStaticBoxSizer->Add(m_date_format_choice, g_flags);
+    dateFormatStaticBoxSizer->Add(m_date_format_choice, g_flagsH);
     m_date_format_choice->SetToolTip(_("Specify the date format for display"));
 
     m_sample_date_text = new wxStaticText(this, wxID_STATIC,
         "redefined elsewhere");
     dateFormatStaticBoxSizer->Add(new wxStaticText(this, wxID_STATIC,
-        _("New date format sample:")), wxSizerFlags(g_flags).Border(wxLEFT, 15));
-    dateFormatStaticBoxSizer->Add(m_sample_date_text, wxSizerFlags(g_flags).Border(wxLEFT, 5));
+        _("New date format sample:")), wxSizerFlags(g_flagsH).Border(wxLEFT, 15));
+    dateFormatStaticBoxSizer->Add(m_sample_date_text, wxSizerFlags(g_flagsH).Border(wxLEFT, 5));
     m_sample_date_text->SetLabelText(wxDateTime::Now().Format(m_date_format));
 
     // Financial Year Settings
@@ -137,7 +137,7 @@ void mmOptionGeneralSettings::Create()
     generalPanelSizer->Add(financialYearStaticBoxSizer, wxSizerFlags(g_flagsExpand).Proportion(0));
     financialYearStaticBoxSizer->Add(financialYearStaticBoxSizerGrid);
 
-    financialYearStaticBoxSizerGrid->Add(new wxStaticText(this, wxID_STATIC, _("Start Day")), g_flags);
+    financialYearStaticBoxSizerGrid->Add(new wxStaticText(this, wxID_STATIC, _("Start Day")), g_flagsH);
     int day = Model_Infotable::instance().GetIntInfo("FINANCIAL_YEAR_START_DAY", 1);
 
     wxSpinCtrl *textFPSDay = new wxSpinCtrl(this, ID_DIALOG_OPTIONS_FINANCIAL_YEAR_START_DAY,
@@ -145,9 +145,9 @@ void mmOptionGeneralSettings::Create()
     textFPSDay->SetValue(day);
     textFPSDay->SetToolTip(_("Specify Day for start of financial year"));
 
-    financialYearStaticBoxSizerGrid->Add(textFPSDay, g_flags);
+    financialYearStaticBoxSizerGrid->Add(textFPSDay, g_flagsH);
 
-    financialYearStaticBoxSizerGrid->Add(new wxStaticText(this, wxID_STATIC, _("Start Month")), g_flags);
+    financialYearStaticBoxSizerGrid->Add(new wxStaticText(this, wxID_STATIC, _("Start Month")), g_flagsH);
 
     wxArrayString financialMonthsSelection;
     for (wxDateTime::Month m = wxDateTime::Jan; m <= wxDateTime::Dec; m = wxDateTime::Month(m + 1))
@@ -155,7 +155,7 @@ void mmOptionGeneralSettings::Create()
 
     m_month_selection = new wxChoice(this, ID_DIALOG_OPTIONS_FINANCIAL_YEAR_START_MONTH
         , wxDefaultPosition, wxSize(100, -1), financialMonthsSelection);
-    financialYearStaticBoxSizerGrid->Add(m_month_selection, g_flags);
+    financialYearStaticBoxSizerGrid->Add(m_month_selection, g_flagsH);
 
     int monthItem = Model_Infotable::instance().GetIntInfo("FINANCIAL_YEAR_START_MONTH", 7);
     m_month_selection->SetSelection(monthItem - 1);
@@ -167,20 +167,21 @@ void mmOptionGeneralSettings::Create()
     m_use_org_date_copy_paste = new wxCheckBox(this, wxID_STATIC, _("Use Original Date when Pasting Transactions"), wxDefaultPosition, wxDefaultSize, wxCHK_2STATE);
     m_use_org_date_copy_paste->SetValue(GetIniDatabaseCheckboxValue(INIDB_USE_ORG_DATE_COPYPASTE, false));
     m_use_org_date_copy_paste->SetToolTip(_("Select whether to use the original transaction date or current date when copying/pasting transactions"));
-    generalPanelSizer->Add(m_use_org_date_copy_paste, g_flags);
+    generalPanelSizer->Add(m_use_org_date_copy_paste, g_flagsV);
 
     m_use_sound = new wxCheckBox(this, wxID_STATIC, _("Use Transaction Sound"), wxDefaultPosition, wxDefaultSize, wxCHK_2STATE);
     m_use_sound->SetValue(GetIniDatabaseCheckboxValue(INIDB_USE_TRANSACTION_SOUND, true));
     m_use_sound->SetToolTip(_("Select whether to use sounds when entering transactions"));
-    generalPanelSizer->Add(m_use_sound, g_flags);
+    generalPanelSizer->Add(m_use_sound, g_flagsV);
 }
 
-void mmOptionGeneralSettings::OnCurrency(wxCommandEvent& /*event*/)
+void OptionSettingsGeneral::OnCurrency(wxCommandEvent& /*event*/)
 {
-    int currencyID = Model_Infotable::instance().GetBaseCurrencyId();
+    int currencyID = Option::instance().BaseCurrency();
 
     if (mmMainCurrencyDialog::Execute(this, currencyID) && currencyID != -1)
     {
+        currencyID = Option::instance().BaseCurrency();
         Model_Currency::Data* currency = Model_Currency::instance().get(currencyID);
         wxButton* bn = (wxButton*) FindWindow(ID_DIALOG_OPTIONS_BUTTON_CURRENCY);
         bn->SetLabelText(currency->CURRENCYNAME);
@@ -191,13 +192,12 @@ void mmOptionGeneralSettings::OnCurrency(wxCommandEvent& /*event*/)
     }
 }
 
-void mmOptionGeneralSettings::OnDateFormatChanged(wxCommandEvent& /*event*/)
+void OptionSettingsGeneral::OnDateFormatChanged(wxCommandEvent& /*event*/)
 {
     wxStringClientData* data = (wxStringClientData*) (m_date_format_choice->GetClientObject(m_date_format_choice->GetSelection()));
     if (data)
     {
         m_date_format = data->GetData();
-        mmOptions::instance().dateFormat_ = m_date_format;
         m_sample_date_text->SetLabelText(wxDateTime::Now().Format(m_date_format));
     }
     else
@@ -206,7 +206,7 @@ void mmOptionGeneralSettings::OnDateFormatChanged(wxCommandEvent& /*event*/)
     }
 }
 
-void mmOptionGeneralSettings::OnLanguageChanged(wxCommandEvent& /*event*/)
+void OptionSettingsGeneral::OnLanguageChanged(wxCommandEvent& /*event*/)
 {
     const wxString lang = mmDialogs::mmSelectLanguage(this->m_app, this, true, false);
     if (lang.empty()) return;
@@ -216,32 +216,30 @@ void mmOptionGeneralSettings::OnLanguageChanged(wxCommandEvent& /*event*/)
     btn->SetLabelText(lang.Capitalize());
 }
 
-void mmOptionGeneralSettings::SaveFinancialYearStart()
+void OptionSettingsGeneral::SaveFinancialYearStart()
 {
     //Save Financial Year Start Day
     wxSpinCtrl* fysDay = (wxSpinCtrl*) FindWindow(ID_DIALOG_OPTIONS_FINANCIAL_YEAR_START_DAY);
-    wxString fysDayVal = wxString::Format("%d", fysDay->GetValue());
-    mmOptions::instance().financialYearStartDayString_ = fysDayVal;
-    Model_Infotable::instance().Set("FINANCIAL_YEAR_START_DAY", fysDayVal);
+    Option::instance().FinancialYearStartDay(wxString::Format("%d", fysDay->GetValue()));
 
     //Save Financial Year Start Month
     wxString fysMonthVal = wxString() << m_month_selection->GetSelection() + 1;
-    mmOptions::instance().financialYearStartMonthString_ = fysMonthVal;
-    Model_Infotable::instance().Set("FINANCIAL_YEAR_START_MONTH", fysMonthVal);
+    Option::instance().FinancialYearStartMonth(fysMonthVal);
 }
 
-void mmOptionGeneralSettings::SaveSettings()
+void OptionSettingsGeneral::SaveSettings()
 {
     wxTextCtrl* stun = (wxTextCtrl*) FindWindow(ID_DIALOG_OPTIONS_TEXTCTRL_USERNAME);
-    mmOptions::instance().userNameString_ = stun->GetValue();
-    Model_Infotable::instance().Set("USERNAME", mmOptions::instance().userNameString_);
+    Option::instance().UserName(stun->GetValue());
 
     wxButton *languageButton = (wxButton*) FindWindow(ID_DIALOG_OPTIONS_BUTTON_LANGUAGE);
-    Model_Setting::instance().Set(LANGUAGE_PARAMETER, languageButton->GetLabel().Lower());
+    wxString language = languageButton->GetLabel().Lower();
+    Option::instance().Language(language);
     mmDialogs::mmSelectLanguage(this->m_app, this, false);
 
     //Model_Infotable::instance().SetBaseCurrency(m_currency_id); Handled only inside MainCurrencyDialog to better manage CurrencyHistory changes
-    Model_Infotable::instance().Set("DATEFORMAT", m_date_format);
+
+    Option::instance().DateFormat(m_date_format);
     SaveFinancialYearStart();
 
     Model_Setting::instance().Set(INIDB_USE_ORG_DATE_COPYPASTE, m_use_org_date_copy_paste->GetValue());

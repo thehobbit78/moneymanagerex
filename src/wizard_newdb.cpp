@@ -146,7 +146,7 @@ mmNewDatabaseWizardPage::mmNewDatabaseWizardPage(mmNewDatabaseWizard* parent)
     itemBoxSizer5->Add(itemStaticText6, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
     itemUserName_ = new wxTextCtrl(this, wxID_ANY);
-    itemBoxSizer5->Add(itemUserName_, 1, wxALIGN_CENTER_VERTICAL | wxGROW | wxALL, 5);
+    itemBoxSizer5->Add(itemUserName_, 1, wxGROW | wxALL, 5);
 
     helpMsg = _("(Optional) Specify a title or your name.") + "\n";
     helpMsg += _("Used as a database title for displayed and printed reports.");
@@ -164,15 +164,14 @@ bool mmNewDatabaseWizardPage::TransferDataFromWindow()
         return false;
     }
     wxString userName = itemUserName_->GetValue().Trim();
-    Model_Infotable::instance().Set("USERNAME", userName);
-    mmOptions::instance().userNameString_ = userName;
+    Option::instance().UserName(userName);
 
     return true;
 }
 
 void mmNewDatabaseWizardPage::OnCurrency(wxCommandEvent& /*event*/)
 {
-    currencyID_ = Model_Infotable::instance().GetBaseCurrencyId();
+    currencyID_ = Option::instance().BaseCurrency();
 
     if (mmMainCurrencyDialog::Execute(this, currencyID_) && currencyID_ != -1)
     {
@@ -181,7 +180,7 @@ void mmNewDatabaseWizardPage::OnCurrency(wxCommandEvent& /*event*/)
         {
             itemButtonCurrency_->SetLabelText(currency->CURRENCYNAME);
             currencyID_ = currency->CURRENCYID;
-            Model_Infotable::instance().SetBaseCurrency(currencyID_);
+            Option::instance().BaseCurrency(currencyID_);
         }
     }
 }

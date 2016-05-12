@@ -80,7 +80,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/SAFESEH:NO /DEBUG /MAP /MAPINFO:EXPORTS /OPT:REF /OPT:ICF /SUBSYSTEM:WINDOWS,5.1"
-				AdditionalDependencies="$(PlatformName)\$(ConfigurationName)\wxsqlite.lib $(PlatformName)\$(ConfigurationName)\lua.lib wxmsw30u_core.lib wxmsw30u_qa.lib wxbase30u_net.lib wxmsw30u_html.lib wxbase30u_xml.lib wxmsw30u_aui.lib wxmsw30u_adv.lib wxmsw30u_stc.lib wxscintilla.lib wxmsw30u_webview.lib wxbase30u.lib wxtiff.lib wxjpeg.lib wxpng.lib wxzlib.lib wxregexu.lib wxexpat.lib kernel32.lib user32.lib gdi32.lib comdlg32.lib winspool.lib winmm.lib shell32.lib comctl32.lib ole32.lib oleaut32.lib uuid.lib rpcrt4.lib advapi32.lib wsock32.lib"
+				AdditionalDependencies="$(PlatformName)\$(ConfigurationName)\wxsqlite.lib $(PlatformName)\$(ConfigurationName)\lua.lib wxmsw31u_core.lib wxmsw31u_qa.lib wxbase31u_net.lib wxmsw31u_html.lib wxbase31u_xml.lib wxmsw31u_aui.lib wxmsw31u_adv.lib wxmsw31u_stc.lib wxscintilla.lib wxmsw31u_webview.lib wxbase31u.lib wxtiff.lib wxjpeg.lib wxpng.lib wxzlib.lib wxregexu.lib wxexpat.lib kernel32.lib user32.lib gdi32.lib comdlg32.lib winspool.lib winmm.lib shell32.lib comctl32.lib ole32.lib oleaut32.lib uuid.lib rpcrt4.lib advapi32.lib wsock32.lib"
 				OutputFile="$(PlatformName)\$(ConfigurationName)\mmex.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
@@ -172,7 +172,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/SAFESEH:NO  /SUBSYSTEM:WINDOWS,5.1"
-				AdditionalDependencies="$(PlatformName)\$(ConfigurationName)\wxsqlite.lib $(PlatformName)\$(ConfigurationName)\lua.lib wxmsw30ud_core.lib wxmsw30ud_qa.lib wxbase30ud_net.lib wxmsw30ud_html.lib wxbase30ud_xml.lib wxmsw30ud_aui.lib wxmsw30ud_adv.lib wxmsw30ud_stc.lib wxscintillad.lib wxmsw30ud_webview.lib wxbase30ud.lib wxtiffd.lib wxjpegd.lib wxpngd.lib wxzlibd.lib wxregexud.lib wxexpatd.lib kernel32.lib user32.lib gdi32.lib comdlg32.lib winspool.lib winmm.lib shell32.lib comctl32.lib ole32.lib oleaut32.lib uuid.lib rpcrt4.lib advapi32.lib wsock32.lib"
+				AdditionalDependencies="$(PlatformName)\$(ConfigurationName)\wxsqlite.lib $(PlatformName)\$(ConfigurationName)\lua.lib wxmsw31ud_core.lib wxmsw31ud_qa.lib wxbase31ud_net.lib wxmsw31ud_html.lib wxbase31ud_xml.lib wxmsw31ud_aui.lib wxmsw31ud_adv.lib wxmsw31ud_stc.lib wxscintillad.lib wxmsw31ud_webview.lib wxbase31ud.lib wxtiffd.lib wxjpegd.lib wxpngd.lib wxzlibd.lib wxregexud.lib wxexpatd.lib kernel32.lib user32.lib gdi32.lib comdlg32.lib winspool.lib winmm.lib shell32.lib comctl32.lib ole32.lib oleaut32.lib uuid.lib rpcrt4.lib advapi32.lib wsock32.lib"
 				OutputFile="$(PlatformName)\$(ConfigurationName)\mmex.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
@@ -263,7 +263,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/SAFESEH:NO /DEBUG /MAP /MAPINFO:EXPORTS /OPT:REF /OPT:ICF /SUBSYSTEM:WINDOWS,5.1"
-				AdditionalDependencies="$(PlatformName)\$(ConfigurationName)\wxsqlite.lib $(PlatformName)\$(ConfigurationName)\lua.lib wxmsw30u_core.lib wxmsw30u_qa.lib wxbase30u_net.lib wxmsw30u_html.lib wxbase30u_xml.lib wxmsw30u_aui.lib wxmsw30u_adv.lib wxmsw30u_stc.lib wxscintilla.lib wxmsw30u_webview.lib wxbase30u.lib wxtiff.lib wxjpeg.lib wxpng.lib wxzlib.lib wxregexu.lib wxexpat.lib kernel32.lib user32.lib gdi32.lib comdlg32.lib winspool.lib winmm.lib shell32.lib comctl32.lib ole32.lib oleaut32.lib uuid.lib rpcrt4.lib advapi32.lib wsock32.lib"
+				AdditionalDependencies="$(PlatformName)\$(ConfigurationName)\wxsqlite.lib $(PlatformName)\$(ConfigurationName)\lua.lib wxmsw31u_core.lib wxmsw31u_qa.lib wxbase31u_net.lib wxmsw31u_html.lib wxbase31u_xml.lib wxmsw31u_aui.lib wxmsw31u_adv.lib wxmsw31u_stc.lib wxscintilla.lib wxmsw31u_webview.lib wxbase31u.lib wxtiff.lib wxjpeg.lib wxpng.lib wxzlib.lib wxregexu.lib wxexpat.lib kernel32.lib user32.lib gdi32.lib comdlg32.lib winspool.lib winmm.lib shell32.lib comctl32.lib ole32.lib oleaut32.lib uuid.lib rpcrt4.lib advapi32.lib wsock32.lib"
 				OutputFile="$(PlatformName)\$(ConfigurationName)\mmex.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
@@ -355,7 +355,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/SAFESEH:NO  /SUBSYSTEM:WINDOWS,5.1"
-				AdditionalDependencies="$(PlatformName)\$(ConfigurationName)\wxsqlite.lib $(PlatformName)\$(ConfigurationName)\lua.lib wxmsw30ud_core.lib wxmsw30ud_qa.lib wxbase30ud_net.lib wxmsw30ud_html.lib wxbase30ud_xml.lib wxmsw30ud_aui.lib wxmsw30ud_adv.lib wxmsw30ud_stc.lib wxscintillad.lib wxmsw30ud_webview.lib wxbase30ud.lib wxtiffd.lib wxjpegd.lib wxpngd.lib wxzlibd.lib wxregexud.lib wxexpatd.lib kernel32.lib user32.lib gdi32.lib comdlg32.lib winspool.lib winmm.lib shell32.lib comctl32.lib ole32.lib oleaut32.lib uuid.lib rpcrt4.lib advapi32.lib wsock32.lib"
+				AdditionalDependencies="$(PlatformName)\$(ConfigurationName)\wxsqlite.lib $(PlatformName)\$(ConfigurationName)\lua.lib wxmsw31ud_core.lib wxmsw31ud_qa.lib wxbase31ud_net.lib wxmsw31ud_html.lib wxbase31ud_xml.lib wxmsw31ud_aui.lib wxmsw31ud_adv.lib wxmsw31ud_stc.lib wxscintillad.lib wxmsw31ud_webview.lib wxbase31ud.lib wxtiffd.lib wxjpegd.lib wxpngd.lib wxzlibd.lib wxregexud.lib wxexpatd.lib kernel32.lib user32.lib gdi32.lib comdlg32.lib winspool.lib winmm.lib shell32.lib comctl32.lib ole32.lib oleaut32.lib uuid.lib rpcrt4.lib advapi32.lib wsock32.lib"
 				OutputFile="$(PlatformName)\$(ConfigurationName)\mmex.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
@@ -469,6 +469,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\model\Model_Shareinfo.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\model\Model_Splittransaction.cpp"
 				>
 			</File>
@@ -482,6 +486,10 @@
 			</File>
 			<File
 				RelativePath="..\..\src\model\Model_Subcategory.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\model\Model_Translink.cpp"
 				>
 			</File>
 			<File
@@ -645,34 +653,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\mmOption.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\mmOptionAttachmentSettings.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\mmOptionBaseSettings.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\mmOptionGeneralSettings.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\mmOptionMiscSettings.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\mmOptionNetSettings.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\mmOptionViewSettings.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\src\mmSimpleDialogs.cpp"
 				>
 			</File>
@@ -717,7 +697,35 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\optionsdialog.cpp"
+				RelativePath="..\..\src\option.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\optiondialog.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\optionsettingsattachment.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\optionsettingsbase.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\optionsettingsgeneral.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\optionsettingsmisc.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\optionsettingsnet.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\optionsettingsview.cpp"
 				>
 			</File>
 			<File
@@ -769,6 +777,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\sharetransactiondialog.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\splitdetailsdialog.cpp"
 				>
 			</File>
@@ -802,6 +814,10 @@
 			</File>
 			<File
 				RelativePath="..\..\src\import_export\univcsvdialog.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\usertransactionpanel.cpp"
 				>
 			</File>
 			<File
@@ -919,6 +935,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\db\DB_Table_Shareinfo_V1.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\db\DB_Table_Splittransactions_V1.h"
 				>
 			</File>
@@ -932,6 +952,10 @@
 			</File>
 			<File
 				RelativePath="..\..\src\db\DB_Table_Subcategory_V1.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\db\DB_Table_Translink_V1.h"
 				>
 			</File>
 			<File
@@ -1015,6 +1039,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\model\Model_Shareinfo.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\model\Model_Splittransaction.h"
 				>
 			</File>
@@ -1028,6 +1056,10 @@
 			</File>
 			<File
 				RelativePath="..\..\src\model\Model_Subcategory.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\model\Model_Translink.h"
 				>
 			</File>
 			<File
@@ -1195,34 +1227,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\mmOption.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\mmOptionAttachmentSettings.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\mmOptionBaseSettings.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\mmOptionGeneralSettings.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\mmOptionMiscSettings.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\mmOptionNetSettings.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\mmOptionViewSettings.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\src\mmSimpleDialogs.h"
 				>
 			</File>
@@ -1275,7 +1279,35 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\optionsdialog.h"
+				RelativePath="..\..\src\option.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\optiondialog.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\optionsettingsattachment.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\optionsettingsbase.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\optionsettingsgeneral.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\optionsettingsmisc.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\optionsettingsnet.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\optionsettingsview.h"
 				>
 			</File>
 			<File
@@ -1331,6 +1363,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\sharetransactiondialog.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\singleton.h"
 				>
 			</File>
@@ -1368,6 +1404,10 @@
 			</File>
 			<File
 				RelativePath="..\..\src\import_export\univcsvdialog.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\usertransactionpanel.h"
 				>
 			</File>
 			<File

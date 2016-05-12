@@ -28,7 +28,7 @@ Copyright (C) 2014 Nikolay
 #include <cmath>
 
 #include "constants.h"
-#include "mmOption.h"
+#include "option.h"
 #include "util.h"
 
 #include "model/Model_Setting.h"
@@ -37,6 +37,7 @@ Copyright (C) 2014 Nikolay
 #include "model/Model_Stock.h"
 #include "model/Model_Billsdeposits.h"
 #include "model/Model_Category.h"
+#include "model/Model_Translink.h"
 #include "model/Model_CreditCard.h"
 
 #include "cajun/json/elements.h"
@@ -567,11 +568,11 @@ void mmHomePagePanel::getTemplate()
 
 void mmHomePagePanel::getData()
 {
-    m_frames["HTMLSCALE"] = wxString::Format("%d", mmIniOptions::instance().html_font_size_);
+    m_frames["HTMLSCALE"] = wxString::Format("%d", Option::instance().HtmlFontSize());
 
     vAccts_ = Model_Setting::instance().ViewAccounts();
     date_range_->destroy();
-    if (mmIniOptions::instance().ignoreFutureTransactions_)
+    if (Option::instance().IgnoreFutureTransactions())
         date_range_ = new mmCurrentMonthToDate;
     else
         date_range_ = new mmCurrentMonth;
@@ -635,7 +636,7 @@ void mmHomePagePanel::fillData()
 
 void mmHomePagePanel::get_account_stats(std::map<int, std::pair<double, double> > &accountStats)
 {
-    bool ignoreFuture = mmIniOptions::instance().ignoreFutureTransactions_;
+    bool ignoreFuture = Option::instance().IgnoreFutureTransactions();
 
     const auto &transactions = Model_Checking::instance().all();
     this->total_transactions_ = transactions.size();
@@ -662,7 +663,7 @@ void mmHomePagePanel::getExpensesIncomeStats(std::map<int, std::pair<double, dou
     , mmDateRange* date_range)const
 {
     //Initialization
-    bool ignoreFuture = mmIniOptions::instance().ignoreFutureTransactions_;
+    bool ignoreFuture = Option::instance().IgnoreFutureTransactions();
     wxDateTime start_date = wxDateTime(date_range->end_date()).SetDay(1);
 
     //Calculations
@@ -680,7 +681,13 @@ void mmHomePagePanel::getExpensesIncomeStats(std::map<int, std::pair<double, dou
             if (Model_Checking::TRANSDATE(pBankTransaction).IsLaterThan(date_range->today()))
                 continue; //skip future dated transactions
         }
-
+        
+        // Check if this is a foreign transaction
+        if (Model_Checking::foreignTransaction(pBankTransaction) && pBankTransaction.TOACCOUNTID == Model_Translink::AS_TRANSFER)
+        {
+            continue; // Do not include foreign transfer transactions in income/expense calculations.
+        }
+        
         // We got this far, get the currency conversion rate for this account
         Model_Account::Data *account = Model_Account::instance().get(pBankTransaction.ACCOUNTID);
         double convRate = (account ? Model_Account::currency(account)->BASECONVRATE : 1);

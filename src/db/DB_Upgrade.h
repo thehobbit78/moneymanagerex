@@ -7,7 +7,7 @@
  *      @brief
  *
  *      Revision History:
- *          AUTO GENERATED at 2016-02-19 22:29:22.523000.
+ *          AUTO GENERATED at 2016-04-28 12:52:07.810000.
  *          DO NOT EDIT!
  */
 //=============================================================================
@@ -18,7 +18,7 @@
 #include <vector>
 #include <wx/string.h>
 
-const int dbLatestVersion = 4;
+const int dbLatestVersion = 6;
 
 const std::vector<wxString> dbUpgradeQuery =
 {
@@ -61,6 +61,53 @@ const std::vector<wxString> dbUpgradeQuery =
             'ASSETCLASSID' INTEGER NOT NULL,
             'STOCKSYMBOL' TEXT UNIQUE
         );
+    )",
+
+    // Upgrade to version 5
+    R"(
+        -- CustomField
+        CREATE TABLE IF NOT EXISTS CUSTOMFIELD_V1 (
+        FIELDID INTEGER NOT NULL PRIMARY KEY
+        , REFTYPE TEXT NOT NULL /* Transaction, Stock, Asset, BankAccount, RepeatingTransaction, Payee */
+        , DESCRIPTION TEXT COLLATE NOCASE
+        , TYPE TEXT NOT NULL /* String, Integer, Decimal, Boolean, Date, Time, SingleChoiche, MultiChoiche */
+        , PROPERTIES TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS IDX_CUSTOMFIELD_REF ON CUSTOMFIELD_V1 (REFTYPE);
+        
+        -- CustomFieldData
+        CREATE TABLE IF NOT EXISTS CUSTOMFIELDDATA_V1 (
+        FIELDATADID INTEGER NOT NULL PRIMARY KEY
+        , FIELDID INTEGER NOT NULL
+        , REFID INTEGER NOT NULL
+        , CONTENT TEXT
+        , UNIQUE(FIELDID, REFID)
+        );
+        CREATE INDEX IF NOT EXISTS IDX_CUSTOMFIELDDATA_REF ON CUSTOMFIELDDATA_V1 (FIELDID, REFID);
+    )",
+
+    // Upgrade to version 6
+    R"(
+        -- describe TRANSACTIONLINK_V1
+        CREATE TABLE IF NOT EXISTS TRANSLINK_V1 (
+        TRANSLINKID  integer NOT NULL primary key
+        , CHECKINGACCOUNTID integer NOT NULL
+        , LINKTYPE TEXT NOT NULL /* Asset, Stock */
+        , LINKRECORDID integer NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS IDX_LINKRECORD ON TRANSLINK_V1 (LINKTYPE, LINKRECORDID);
+        CREATE INDEX IF NOT EXISTS IDX_CHECKINGACCOUNT ON TRANSLINK_V1 (CHECKINGACCOUNTID);
+        
+        -- describe SHAREINFO_V1
+        CREATE TABLE IF NOT EXISTS SHAREINFO_V1 (
+        SHAREINFOID  integer NOT NULL primary key
+        , CHECKINGACCOUNTID integer NOT NULL
+        , SHARENUMBER numeric
+        , SHAREPRICE numeric
+        , SHARECOMMISSION numeric
+        , SHARELOT TEXT
+        );
+        CREATE INDEX IF NOT EXISTS IDX_SHAREINFO ON SHAREINFO_V1 (CHECKINGACCOUNTID);
     )",
 
 };

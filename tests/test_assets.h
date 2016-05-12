@@ -44,7 +44,7 @@ public:
 private:
     wxString m_test_db_filename;
     wxSQLite3Database m_test_db;
-    DB_Init_Model* m_dbmodel;
+    DB_Model* m_dbmodel;
     TestFrameBase *m_base_frame;
     TestFrameBase* m_user_request;
     int m_this_instance;

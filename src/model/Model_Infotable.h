@@ -58,9 +58,6 @@ public:
     wxString GetStringInfo(const wxString& key, const wxString& default_value);
     const wxColour GetColourSetting(const wxString& key, const wxColour& default_value = wxColour(255, 255, 255));
 
-    int GetBaseCurrencyId();
-    void SetBaseCurrency(int currency_id);
-
     /* Returns true if key setting found */
     bool KeyExists(const wxString& key);
     /* Check database at minimum revision*/
@@ -69,8 +66,6 @@ public:
     static loop_t to_loop_t();
 
 public:
-    wxString DateFormat();
-    void SetDateFormat(const wxString& date_format_mask);
     bool OpenCustomDialog(const wxString& RefType);
     void SetOpenCustomDialog(const wxString& RefType, const bool Status);
     wxSize CustomDialogSize(const wxString& RefType);

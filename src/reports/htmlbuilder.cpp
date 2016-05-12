@@ -19,7 +19,7 @@
 
 #include "htmlbuilder.h"
 #include "util.h"
-#include "mmOption.h"
+#include "option.h"
 #include "constants.h"
 #include "model/Model_Currency.h"
 #include "model/Model_Infotable.h"
@@ -120,16 +120,16 @@ void mmHTMLBuilder::init()
 {
     html_ = wxString::Format(wxString::FromUTF8(tags::HTML)
         , mmex::getProgramName()
-        , wxString::Format("%d", mmIniOptions::instance().html_font_size_)
+        , wxString::Format("%d", Option::instance().HtmlFontSize())
     );
 
     //Show user name if provided
-    if (mmOptions::instance().userNameString_ != "")
+    if (Option::instance().UserName() != "")
     {
         startTable();
         startTableRow();
         startTableCell();
-        addHeader(2, mmOptions::instance().userNameString_);
+        addHeader(2, Option::instance().UserName());
         endTableCell();
         endTableRow();
         endTable();
@@ -433,11 +433,16 @@ void mmHTMLBuilder::addPieChart(std::vector<ValueTrio>& valueList, const wxStrin
         "</script>\n";
 
     wxString data ="";
+    wxString label;
     for (const auto& entry : valueList)
     {
+        // Replace problem causing character
+        label = entry.label;
+        label.Replace("'", " ");
+
         data += wxString::Format(data_item
             , fabs(entry.amount), entry.color
-            , entry.label );
+            , label );
     }
     this->addText(wxString::Format("<canvas id='%s' width ='%i' height='%i' style='min-width: %dpx; min-height: %dpx'></canvas>\n", id, x, y, x, y));
     this->addText(wxString::Format(js, data, id));

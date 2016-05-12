@@ -57,14 +57,14 @@ mmAssetsListCtrl::mmAssetsListCtrl(mmAssetsPanel* cp, wxWindow *parent, wxWindow
     m_selected_col = Model_Setting::instance().GetIntSetting("ASSETS_SORT_COL", m_default_sort_column);
     m_asc = Model_Setting::instance().GetBoolSetting("ASSETS_ASC", true);
 
-    m_columns.push_back(std::make_tuple(" ", 25, wxLIST_FORMAT_LEFT));
-    m_columns.push_back(std::make_tuple(_("ID"), wxLIST_AUTOSIZE, wxLIST_FORMAT_RIGHT));
-    m_columns.push_back(std::make_tuple(_("Name"), 150, wxLIST_FORMAT_LEFT));
-    m_columns.push_back(std::make_tuple(_("Date"), wxLIST_AUTOSIZE_USEHEADER, wxLIST_FORMAT_LEFT));
-    m_columns.push_back(std::make_tuple(_("Type"), wxLIST_AUTOSIZE_USEHEADER, wxLIST_FORMAT_LEFT));
-    m_columns.push_back(std::make_tuple(_("Initial Value"), wxLIST_AUTOSIZE_USEHEADER, wxLIST_FORMAT_RIGHT));
-    m_columns.push_back(std::make_tuple(_("Current Value"), wxLIST_AUTOSIZE_USEHEADER, wxLIST_FORMAT_RIGHT));
-    m_columns.push_back(std::make_tuple(_("Notes"), 450, wxLIST_FORMAT_LEFT));
+    m_columns.push_back(PANEL_COLUMN(" ", 25, wxLIST_FORMAT_LEFT));
+    m_columns.push_back(PANEL_COLUMN(_("ID"), wxLIST_AUTOSIZE, wxLIST_FORMAT_RIGHT));
+    m_columns.push_back(PANEL_COLUMN(_("Name"), 150, wxLIST_FORMAT_LEFT));
+    m_columns.push_back(PANEL_COLUMN(_("Date"), wxLIST_AUTOSIZE_USEHEADER, wxLIST_FORMAT_LEFT));
+    m_columns.push_back(PANEL_COLUMN(_("Type"), wxLIST_AUTOSIZE_USEHEADER, wxLIST_FORMAT_LEFT));
+    m_columns.push_back(PANEL_COLUMN(_("Initial Value"), wxLIST_AUTOSIZE_USEHEADER, wxLIST_FORMAT_RIGHT));
+    m_columns.push_back(PANEL_COLUMN(_("Current Value"), wxLIST_AUTOSIZE_USEHEADER, wxLIST_FORMAT_RIGHT));
+    m_columns.push_back(PANEL_COLUMN(_("Notes"), 450, wxLIST_FORMAT_LEFT));
 
     m_col_width = "ASSETS_COL%d_WIDTH";
     m_default_sort_column = m_panel->col_sort();
@@ -73,9 +73,9 @@ mmAssetsListCtrl::mmAssetsListCtrl(mmAssetsPanel* cp, wxWindow *parent, wxWindow
     {
         long count = GetColumnCount();
         InsertColumn(count
-            , std::get<HEADER>(entry)
-            , std::get<FORMAT>(entry)
-            , Model_Setting::instance().GetIntSetting(wxString::Format(m_col_width, count), std::get<WIDTH>(entry)));
+            , entry.HEADER
+            , entry.FORMAT
+            , Model_Setting::instance().GetIntSetting(wxString::Format(m_col_width, count), entry.WIDTH));
     }
 }
 
@@ -370,20 +370,20 @@ void mmAssetsPanel::CreateControls()
 
     wxPanel* headerPanel = new wxPanel(this, wxID_ANY, wxDefaultPosition
         , wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL);
-    itemBoxSizer9->Add(headerPanel, g_flagsBorder1);
+    itemBoxSizer9->Add(headerPanel, g_flagsBorder1V);
 
     wxBoxSizer* itemBoxSizerVHeader = new wxBoxSizer(wxVERTICAL);
     headerPanel->SetSizer(itemBoxSizerVHeader);
 
     wxStaticText* itemStaticText9 = new wxStaticText( headerPanel, wxID_STATIC, _("Assets"));
     itemStaticText9->SetFont(this->GetFont().Larger().Bold());
-    itemBoxSizerVHeader->Add(itemStaticText9, g_flagsBorder1);
+    itemBoxSizerVHeader->Add(itemStaticText9, g_flagsBorder1V);
 
     wxBoxSizer* itemBoxSizerHHeader2 = new wxBoxSizer(wxHORIZONTAL);
     itemBoxSizerVHeader->Add(itemBoxSizerHHeader2);
 
     wxStaticBitmap* itemStaticBitmap3 = new wxStaticBitmap(headerPanel, wxID_STATIC, mmBitmap(png::RIGHTARROW));
-    itemBoxSizerHHeader2->Add(itemStaticBitmap3, g_flagsBorder1);
+    itemBoxSizerHHeader2->Add(itemStaticBitmap3, g_flagsBorder1H);
     //itemStaticBitmap3->Connect(ID_PANEL_CHECKING_STATIC_BITMAP_VIEW, wxEVT_RIGHT_DOWN, wxMouseEventHandler(mmAssetsPanel::OnFilterResetToViewAll), nullptr, this);
     itemStaticBitmap3->Connect(wxID_STATIC, wxEVT_LEFT_DOWN, wxMouseEventHandler(mmAssetsPanel::OnMouseLeftDown), nullptr, this);
 
@@ -391,7 +391,7 @@ void mmAssetsPanel::CreateControls()
     itemBoxSizerHHeader2->Add(itemStaticTextMainFilter_, 0, wxALIGN_CENTER_VERTICAL | wxALL, 1);
 
     header_text_ = new wxStaticText(headerPanel, wxID_STATIC, "");
-    itemBoxSizerVHeader->Add(header_text_, g_flagsBorder1);
+    itemBoxSizerVHeader->Add(header_text_, g_flagsBorder1V);
 
     /* ---------------------- */
 
@@ -400,7 +400,7 @@ void mmAssetsPanel::CreateControls()
 
     m_listCtrlAssets = new mmAssetsListCtrl(this, itemSplitterWindow10, wxID_ANY);
 
-    int x = mmIniOptions::instance().ico_size_;
+    int x = Option::instance().IconSize();
     m_imageList.reset(new wxImageList(x, x));
     m_imageList->Add(mmBitmap(png::PROPERTY));
     m_imageList->Add(mmBitmap(png::CAR));
@@ -426,7 +426,7 @@ void mmAssetsPanel::CreateControls()
     assets_panel->SetSizer(itemBoxSizer4);
 
     wxBoxSizer* itemBoxSizer5 = new wxBoxSizer(wxHORIZONTAL);
-    itemBoxSizer4->Add(itemBoxSizer5, g_flagsBorder1);
+    itemBoxSizer4->Add(itemBoxSizer5, g_flagsBorder1V);
 
     wxButton* itemButton6 = new wxButton( assets_panel, wxID_NEW, _("&New "));
     itemButton6->SetToolTip(_("New Asset"));

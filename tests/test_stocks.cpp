@@ -1,6 +1,6 @@
 /*******************************************************
 Copyright (C) 2013 James Higley
-Copyright (C) 2014 Stefano Giorgio
+Copyright (C) 2014..2016 Stefano Giorgio
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@ Turn test ON or OFF in file: defined_test_selection.h
 *****************************************************************************/
 #include "defined_test_selection.h"
 
-#ifdef MMEX_TESTS_STOCKS
+#ifdef MMEX_TEST_STOCKS
 // Registers the fixture into the 'registry'
 CPPUNIT_TEST_SUITE_REGISTRATION(Test_Stock);
 #endif
@@ -44,6 +44,14 @@ Test_Stock::Test_Stock()
     s_instance_count++;
     m_this_instance = s_instance_count;
     m_test_db_filename = "test_db_model_stock.mmb";
+
+    if (m_this_instance == 1)
+    {
+        if (wxFileExists(m_test_db_filename))
+        {
+            wxRemoveFile(m_test_db_filename);
+        }
+    }
 }
 
 Test_Stock::~Test_Stock()
@@ -61,7 +69,7 @@ void Test_Stock::setUp()
     m_base_frame->Show(true);
    
     m_test_db.Open(m_test_db_filename);
-    m_dbmodel = new DB_Init_Model();
+    m_dbmodel = new DB_Model();
     m_dbmodel->Init_Model_Tables(&m_test_db);
     m_dbmodel->Init_Model_Stocks(&m_test_db);
 }

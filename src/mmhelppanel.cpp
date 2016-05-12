@@ -89,12 +89,15 @@ void mmHelpPanel::CreateControls()
     int helpFileIndex = m_frame->getHelpFileIndex();
  
     wxFileName helpIndexFile(mmex::getPathDoc((mmex::EDocFile)helpFileIndex));
-    if (mmOptions::instance().language_ != "english" && mmOptions::instance().language_ != "")
-        helpIndexFile.AppendDir(mmOptions::instance().language_);
-
+    if (Option::instance().Language() != "english" && Option::instance().Language() != "")
+    {
+        helpIndexFile.AppendDir(Option::instance().Language());
+    }
     wxString url = "file://" + mmex::getPathDoc((mmex::EDocFile)helpFileIndex);
-    if (helpIndexFile.FileExists()) // Load the help file for the given language 
+    if (helpIndexFile.FileExists()) // Load the help file for the given language
+    {
         url = "file://" + helpIndexFile.GetPathWithSep() + helpIndexFile.GetFullName();
+    }
     browser_->LoadURL(url);
     wxLogDebug("%s", url);
 }

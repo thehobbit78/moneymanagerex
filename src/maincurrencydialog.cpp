@@ -74,7 +74,7 @@ mmMainCurrencyDialog::mmMainCurrencyDialog(
     ColName_[CURR_NAME]   = _("Name");
     ColName_[BASE_RATE]   = _("Last Rate");
 
-    currencyID_ = currencyID == -1 ? Model_Infotable::instance().GetBaseCurrencyId() : currencyID;
+    currencyID_ = currencyID == -1 ? Option::instance().BaseCurrency() : currencyID;
     long style = wxCAPTION | wxRESIZE_BORDER | wxSYSTEM_MENU | wxCLOSE_BOX;
     Create(parent, wxID_ANY, _("Currency Dialog"), wxDefaultPosition, wxDefaultSize, style);
 }
@@ -100,7 +100,7 @@ bool mmMainCurrencyDialog::Create(wxWindow* parent
 void mmMainCurrencyDialog::fillControls()
 {
     currencyListBox_->DeleteAllItems();
-    int baseCurrencyID = Model_Infotable::instance().GetBaseCurrencyId();
+    int baseCurrencyID = Option::instance().BaseCurrency();
 
     cbShowAll_->SetValue(Model_Infotable::instance().GetBoolInfo("SHOW_HIDDEN_CURRENCIES", true));
 
@@ -151,14 +151,14 @@ void mmMainCurrencyDialog::CreateControls()
 
     wxBitmapButton* update_button = new wxBitmapButton(this
         , wxID_STATIC, mmBitmap(png::UPDATE));
-    itemBoxSizer22->Add(update_button, g_flags);
+    itemBoxSizer22->Add(update_button, g_flagsH);
     update_button->Connect(wxID_STATIC, wxEVT_COMMAND_BUTTON_CLICKED
         , wxCommandEventHandler(mmMainCurrencyDialog::OnOnlineUpdateCurRate), nullptr, this);
     update_button->SetToolTip(_("Online update currency rate"));
     itemBoxSizer22->AddSpacer(4);
 
     itemBoxSizer22->Add(new wxStaticText(this, wxID_STATIC
-        , _("Online Update")), g_flags);
+        , _("Online Update")), g_flagsH);
 
     itemBoxSizer22->AddSpacer(15);
     cbShowAll_ = new wxCheckBox(this, wxID_SELECTALL, _("Show All"), wxDefaultPosition
@@ -167,7 +167,7 @@ void mmMainCurrencyDialog::CreateControls()
     cbShowAll_->Connect(wxID_SELECTALL, wxEVT_COMMAND_CHECKBOX_CLICKED,
         wxCommandEventHandler(mmMainCurrencyDialog::OnShowHiddenChbClick), nullptr, this);
 
-    itemBoxSizer22->Add(cbShowAll_, g_flags);
+    itemBoxSizer22->Add(cbShowAll_, g_flagsH);
 
     wxBoxSizer* itemBoxSizer3 = new wxBoxSizer(wxHORIZONTAL);
     itemBoxSizer2->Add(itemBoxSizer3, g_flagsExpand);
@@ -186,7 +186,7 @@ void mmMainCurrencyDialog::CreateControls()
     itemBoxSizer3->Add(currencyListBox_, g_flagsExpand);
 
     wxPanel* buttonsPanel = new wxPanel(this, wxID_ANY);
-    itemBoxSizer2->Add(buttonsPanel, wxSizerFlags(g_flags).Center());
+    itemBoxSizer2->Add(buttonsPanel, wxSizerFlags(g_flagsV).Center());
 
     wxBoxSizer* buttonsSizer = new wxBoxSizer(wxVERTICAL);
     buttonsPanel->SetSizer(buttonsSizer);
@@ -194,14 +194,14 @@ void mmMainCurrencyDialog::CreateControls()
     buttonsSizer->Add(itemBoxSizer66);
 
     wxButton* itemButton7 = new wxButton(buttonsPanel, wxID_ADD, _("&Add "));
-    itemBoxSizer66->Add(itemButton7, g_flags);
+    itemBoxSizer66->Add(itemButton7, g_flagsH);
 
     itemButtonEdit_ = new wxButton(buttonsPanel, wxID_EDIT, _("&Edit "));
-    itemBoxSizer66->Add(itemButtonEdit_, g_flags);
+    itemBoxSizer66->Add(itemButtonEdit_, g_flagsH);
     itemButtonEdit_->Disable();
 
     itemButtonDelete_ = new wxButton(buttonsPanel, wxID_REMOVE, _("&Remove "));
-    itemBoxSizer66->Add(itemButtonDelete_, g_flags);
+    itemBoxSizer66->Add(itemButtonDelete_, g_flagsH);
     itemButtonDelete_->Disable();
 
     wxStdDialogButtonSizer* itemBoxSizer9 = new wxStdDialogButtonSizer;
@@ -216,7 +216,7 @@ void mmMainCurrencyDialog::CreateControls()
 
     //Some interfaces has no any close buttons, it may confuse user. Cancel button added
     wxButton* itemCancelButton = new wxButton(buttonsPanel, wxID_CANCEL, wxGetTranslation(g_CloseLabel));
-    itemBoxSizer9->Add(itemCancelButton, g_flags);
+    itemBoxSizer9->Add(itemCancelButton, g_flagsH);
     itemCancelButton->SetFocus();
 
     //History Panel
@@ -253,28 +253,28 @@ void mmMainCurrencyDialog::CreateControls()
 
     //History Buttons
     wxPanel* values_panel = new wxPanel(this, wxID_ANY);
-    historyStaticBox_Sizer->Add(values_panel, wxSizerFlags(g_flags).Centre());
+    historyStaticBox_Sizer->Add(values_panel, wxSizerFlags(g_flagsV).Centre());
     wxStdDialogButtonSizer*  values_sizer = new wxStdDialogButtonSizer;
     values_panel->SetSizer(values_sizer);
 
 
-    values_sizer->Add(new wxStaticText(values_panel, wxID_STATIC, _("Date")), g_flags);
+    values_sizer->Add(new wxStaticText(values_panel, wxID_STATIC, _("Date")), g_flagsH);
 
     valueDatePicker_ = new wxDatePickerCtrl(values_panel, wxID_ANY, wxDefaultDateTime,
         wxDefaultPosition, wxSize(120, -1), wxDP_DROPDOWN | wxDP_SHOWCENTURY);
-    values_sizer->Add(valueDatePicker_, g_flags);
+    values_sizer->Add(valueDatePicker_, g_flagsH);
     valueDatePicker_->SetToolTip(_("Specify the date of currency value"));
 
-    values_sizer->Add(new wxStaticText(values_panel, wxID_STATIC, _("Value")), g_flags);
+    values_sizer->Add(new wxStaticText(values_panel, wxID_STATIC, _("Value")), g_flagsH);
 
     valueTextBox_ = new mmTextCtrl(values_panel, wxID_ANY, wxGetEmptyString()
         , wxDefaultPosition, wxSize(120, -1), wxALIGN_RIGHT | wxTE_PROCESS_ENTER
         , mmCalcValidator());
     valueTextBox_->SetToolTip(_("Enter the currency value"));
-    values_sizer->Add(valueTextBox_, g_flags);
+    values_sizer->Add(valueTextBox_, g_flagsH);
 
     wxPanel* buttons_panel = new wxPanel(this, wxID_ANY);
-    historyStaticBox_Sizer->Add(buttons_panel, wxSizerFlags(g_flags).Centre());
+    historyStaticBox_Sizer->Add(buttons_panel, wxSizerFlags(g_flagsV).Centre());
     wxStdDialogButtonSizer*  buttons_sizer = new wxStdDialogButtonSizer;
     buttons_panel->SetSizer(buttons_sizer);
 
@@ -290,10 +290,10 @@ void mmMainCurrencyDialog::CreateControls()
     wxBitmapButton* buttonDelUnusedHistory = new wxBitmapButton(buttons_panel
         , HISTORY_DELUNUSED, mmBitmap(png::VOID_STAT));
     buttonDelUnusedHistory->SetToolTip(_("Delete Currency Values history for unused currencies"));
-    buttons_sizer->Add(buttonDownload, g_flags);
-    buttons_sizer->Add(historyButtonAdd_, g_flags);
-    buttons_sizer->Add(historyButtonDelete_, g_flags);
-    buttons_sizer->Add(buttonDelUnusedHistory, g_flags);
+    buttons_sizer->Add(buttonDownload, g_flagsH);
+    buttons_sizer->Add(historyButtonAdd_, g_flagsH);
+    buttons_sizer->Add(historyButtonDelete_, g_flagsH);
+    buttons_sizer->Add(buttonDelUnusedHistory, g_flagsH);
 
     this->SetMinSize(wxSize(800,550));
     this->Fit();
@@ -374,7 +374,7 @@ void mmMainCurrencyDialog::OnListItemSelected(wxDataViewEvent& event)
     }
     if (!bEnableSelect_)    // prevent user deleting currencies when editing accounts.
     {
-        int baseCurrencyID = Model_Infotable::instance().GetBaseCurrencyId();
+        int baseCurrencyID = Option::instance().BaseCurrency();
         Model_Currency::Data* currency = Model_Currency::instance().get(currencyID_);
         if (currency)
         {
@@ -538,7 +538,7 @@ void mmMainCurrencyDialog::OnItemRightClick(wxDataViewEvent& event)
     mainMenu->Append(new wxMenuItem(mainMenu, MENU_ITEM1, _("Set as Base Currency")));
     mainMenu->Append(new wxMenuItem(mainMenu, MENU_ITEM2, _("Online Update Currency Rate")));
     
-    int baseCurrencyID = Model_Infotable::instance().GetBaseCurrencyId();
+    int baseCurrencyID = Option::instance().BaseCurrency();
     if (baseCurrencyID == currencyID_)
         mainMenu->Enable(MENU_ITEM1, false);
 
@@ -562,7 +562,7 @@ void mmMainCurrencyDialog::ShowCurrencyHistory()
 {
     valueListBox_->DeleteAllItems();
 
-    int baseCurrencyID = Model_Infotable::instance().GetBaseCurrencyId();
+    int baseCurrencyID = Option::instance().BaseCurrency();
     if (currencyID_ <= 0 || currencyID_ == baseCurrencyID)
     {
         historyButtonAdd_->Disable();
@@ -763,11 +763,11 @@ void mmMainCurrencyDialog::OnHistoryDeselected(wxListEvent& event)
 
 bool mmMainCurrencyDialog::SetBaseCurrency(int& baseCurrencyID)
 {
-    int baseCurrencyOLD = Model_Infotable::instance().GetBaseCurrencyId();
+    int baseCurrencyOLD = Option::instance().BaseCurrency();
     if (baseCurrencyID == baseCurrencyOLD)
         return true;
 
-    Model_Infotable::instance().SetBaseCurrency(baseCurrencyID);
+    Option::instance().BaseCurrency(baseCurrencyID);
 
     Model_Currency::Data* BaseCurrency = Model_Currency::instance().get(baseCurrencyID);
     BaseCurrency->BASECONVRATE = 1;

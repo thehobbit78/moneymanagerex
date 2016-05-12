@@ -20,7 +20,7 @@
 #include "defs.h"
 #include "paths.h"
 #include "constants.h"
-#include "mmOption.h"
+#include "option.h"
 #include "model/Model_Setting.h"
 
 #include "../resources/money.xpm"
@@ -91,7 +91,7 @@ void mmAppStartDialog::CreateControls()
     wxBitmap itemStaticBitmap4Bitmap(money_xpm);
     wxStaticBitmap* itemStaticBitmap4 = new wxStaticBitmap(this, wxID_STATIC, wxBitmap(money_xpm));
 
-    itemBoxSizer3->Add(itemStaticBitmap4, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
+    itemBoxSizer3->Add(itemStaticBitmap4, 0, wxALL, 5);
 
     wxBoxSizer* itemBoxSizer5 = new wxBoxSizer(wxVERTICAL);
     itemBoxSizer3->Add(itemBoxSizer5, 0, wxALIGN_CENTER_HORIZONTAL | wxALL, 5);
@@ -166,8 +166,10 @@ void mmAppStartDialog::OnButtonAppstartHelpClick( wxCommandEvent& /*event*/ )
     wxFileName helpIndexFile(mmex::getPathDoc((mmex::EDocFile)helpFileIndex_));
     wxString url = "file://";
 
-    if (mmOptions::instance().language_ != "english" && mmOptions::instance().language_ != "")
-        helpIndexFile.AppendDir(mmOptions::instance().language_);
+    if (Option::instance().Language() != "english" && Option::instance().Language() != "")
+    {
+        helpIndexFile.AppendDir(Option::instance().Language());
+    }
 
     if (helpIndexFile.FileExists()) // Load the help file for the given language
     {

@@ -92,14 +92,14 @@ void mmWebAppDialog::CreateControls()
     buttons_panel->SetSizer(tools_sizer);
 
     wxStdDialogButtonSizer*  buttons_sizer = new wxStdDialogButtonSizer;
-    tools_sizer->Add(buttons_sizer, wxSizerFlags(g_flags).Center());
+    tools_sizer->Add(buttons_sizer, wxSizerFlags(g_flagsV).Center());
     wxButton* buttonOK = new wxButton(buttons_panel, wxID_OK, _("&Import all "));
     wxButton* buttonApply = new wxButton(buttons_panel, wxID_APPLY, _("Import and open all "));
     wxButton* btnCancel = new wxButton(buttons_panel, wxID_CANCEL, wxGetTranslation(g_CancelLabel));
 
-    buttons_sizer->Add(buttonOK, g_flags);
-    buttons_sizer->Add(buttonApply, g_flags);
-    buttons_sizer->Add(btnCancel, g_flags);
+    buttons_sizer->Add(buttonOK, g_flagsH);
+    buttons_sizer->Add(buttonApply, g_flagsH);
+    buttons_sizer->Add(btnCancel, g_flagsH);
 
     this->SetSizer(mainBoxSizer);
 }
@@ -114,11 +114,11 @@ void mmWebAppDialog::fillControls()
     for (const auto& WebTran : WebAppTransactions_)
     {
         wxVector<wxVariant> data;
-data.push_back(wxVariant(wxString::Format(wxT("%i"),WebTran.ID))); //WEBTRAN_ID
+        data.push_back(wxVariant(wxString::Format(wxT("%i"),WebTran.ID))); //WEBTRAN_ID
         data.push_back(wxVariant(mmGetDateForDisplay(WebTran.Date))); //WEBTRAN_DATE
         data.push_back(wxVariant(WebTran.Account)); //WEBTRAN_ACCOUNT
         data.push_back(wxVariant(WebTran.Status)); //WEBTRAN_STATUS
-        data.push_back(wxVariant(WebTran.Type)); //WEBTRAN_TYPE
+        data.push_back(wxVariant(wxGetTranslation(WebTran.Type))); //WEBTRAN_TYPE
 
         wxString Payee = WebTran.Type != "Transfer" ? WebTran.Payee : "> " + WebTran.ToAccount;
         data.push_back(wxVariant(Payee)); //WEBTRAN_PAYEE
@@ -127,7 +127,10 @@ data.push_back(wxVariant(wxString::Format(wxT("%i"),WebTran.ID))); //WEBTRAN_ID
         if (WebTran.SubCategory != wxEmptyString) Category += ":" + WebTran.SubCategory;
         data.push_back(wxVariant(Category)); //WEBTRAN_CATEGORY
 
-        data.push_back(wxVariant(wxString::Format(wxT("%f"),WebTran.Amount)));
+        Model_Currency::Data *currency = Model_Currency::GetBaseCurrency();
+        wxString Amount = Model_Currency::toStringNoFormatting(WebTran.Amount, currency, Model_Currency::precision(currency));
+        data.push_back(wxVariant(Amount)); //WEBTRAN_AMOUNT
+
         data.push_back(wxVariant(WebTran.Notes)); //WEBTRAN_NOTES
         data.push_back(wxVariant(WebTran.Attachments)); //WEBTRAN_ATTACHMENTS
         webtranListBox_->AppendItem(data, (wxUIntPtr)WebTran.ID);

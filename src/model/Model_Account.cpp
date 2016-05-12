@@ -18,6 +18,7 @@
 
 #include "Model_Account.h"
 #include "Model_Stock.h"
+#include "Model_Translink.h"
 #include "Model_CreditCard.h"
 
 const std::vector<std::pair<Model_Account::STATUS_ENUM, wxString> > Model_Account::STATUS_CHOICES =
@@ -34,6 +35,8 @@ const std::vector<std::pair<Model_Account::TYPE, wxString> > Model_Account::TYPE
     std::make_pair(Model_Account::LOAN, wxString(wxTRANSLATE("Loan"))),
     std::make_pair(Model_Account::TERM, wxString(wxTRANSLATE("Term"))),
     std::make_pair(Model_Account::INVESTMENT, wxString(wxTRANSLATE("Investment"))),
+    std::make_pair(Model_Account::ASSET, wxString(wxTRANSLATE("Asset"))),
+    std::make_pair(Model_Account::SHARES, wxString(wxTRANSLATE("Shares"))),
 };
 
 Model_Account::Model_Account()
@@ -131,10 +134,14 @@ bool Model_Account::remove(int id)
         Model_Checking::instance().remove(r.TRANSID);
     for (const auto& r: Model_Billsdeposits::instance().find_or(Model_Billsdeposits::ACCOUNTID(id), Model_Billsdeposits::TOACCOUNTID(id)))
         Model_Billsdeposits::instance().remove(r.BDID);
+
+    for (const auto& r : Model_Stock::instance().find(Model_Stock::HELDAT(id)))
+    {
+        Model_Translink::RemoveTransLinkRecords(Model_Attachment::STOCK, r.STOCKID);
+        Model_Stock::instance().remove(r.STOCKID);
+    }
     for (const auto& r : Model_CreditCard::instance().find(Model_CreditCard::ACCOUNTID(id)))
         Model_CreditCard::instance().remove(r.ACCOUNTID);
-    for (const auto& r : Model_Stock::instance().find(Model_Stock::HELDAT(id)))
-        Model_Stock::instance().remove(r.STOCKID);
     this->ReleaseSavepoint();
 
     return this->remove(id, db_);
@@ -157,7 +164,7 @@ Model_Currency::Data* Model_Account::currency(const Data& r)
     return currency(&r);
 }
 
-const Model_Checking::Data_Set Model_Account::transaction(const Data*r )
+const Model_Checking::Data_Set Model_Account::transaction(const Data*r)
 {
     auto trans = Model_Checking::instance().find_or(Model_Checking::ACCOUNTID(r->ACCOUNTID)
         , Model_Checking::TOACCOUNTID(r->ACCOUNTID));

@@ -20,7 +20,7 @@
 #include "budgetingpanel.h"
 #include "budgetentrydialog.h"
 #include "images_list.h"
-#include "mmOption.h"
+#include "option.h"
 #include "mmex.h"
 #include "mmframe.h"
 #include "reports/budget.h"
@@ -173,7 +173,7 @@ wxString mmBudgetingPanel::GetPanelTitle() const
     wxString yearStr = Model_Budgetyear::instance().Get(budgetYearID_);
     if ((yearStr.length() < 5))
     {
-        if (mmIniOptions::instance().budgetFinancialYears_)
+        if (Option::instance().BudgetFinancialYears())
         {
             long year;
             yearStr.ToLong(&year);
@@ -203,7 +203,7 @@ void mmBudgetingPanel::UpdateBudgetHeading()
 void mmBudgetingPanel::CreateControls()
 {
     wxSizerFlags flags;
-    flags.Align(wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL).Border(wxLEFT|wxTOP, 4);
+    flags.Align(wxALIGN_LEFT).Border(wxLEFT|wxTOP, 4);
 
     wxBoxSizer* itemBoxSizer2 = new wxBoxSizer(wxVERTICAL);
     this->SetSizer(itemBoxSizer2);
@@ -271,7 +271,7 @@ void mmBudgetingPanel::CreateControls()
     itemIncomeSizer->Add(expenses_diff_);
     /* ---------------------- */
 
-    int x = mmIniOptions::instance().ico_size_;
+    int x = Option::instance().IconSize();
     m_imageList = new wxImageList(x, x);
     m_imageList->Add(mmBitmap(png::RECONCILED));
     m_imageList->Add(mmBitmap(png::VOID_STAT));
@@ -282,17 +282,17 @@ void mmBudgetingPanel::CreateControls()
 
     listCtrlBudget_->SetImageList(m_imageList, wxIMAGE_LIST_SMALL);
     listCtrlBudget_->InsertColumn(COL_ICON, (" "));
-    listCtrlBudget_->InsertColumn(COL_CATEGORY, std::get<0>(listCtrlBudget_->m_columns[COL_CATEGORY]));
-    listCtrlBudget_->InsertColumn(COL_SUBCATEGORY, std::get<0>(listCtrlBudget_->m_columns[COL_SUBCATEGORY]));
-    listCtrlBudget_->InsertColumn(COL_FREQUENCY, std::get<0>(listCtrlBudget_->m_columns[COL_FREQUENCY]));
-    listCtrlBudget_->InsertColumn(COL_AMOUNT, std::get<0>(listCtrlBudget_->m_columns[COL_AMOUNT]), wxLIST_FORMAT_RIGHT);
-    listCtrlBudget_->InsertColumn(COL_ESTIMATED, std::get<0>(listCtrlBudget_->m_columns[COL_ESTIMATED]), wxLIST_FORMAT_RIGHT);
-    listCtrlBudget_->InsertColumn(COL_ACTUAL, std::get<0>(listCtrlBudget_->m_columns[COL_ACTUAL]), wxLIST_FORMAT_RIGHT);
+    listCtrlBudget_->InsertColumn(COL_CATEGORY, listCtrlBudget_->m_columns[COL_CATEGORY].HEADER);
+    listCtrlBudget_->InsertColumn(COL_SUBCATEGORY, listCtrlBudget_->m_columns[COL_SUBCATEGORY].HEADER);
+    listCtrlBudget_->InsertColumn(COL_FREQUENCY, listCtrlBudget_->m_columns[COL_FREQUENCY].HEADER);
+    listCtrlBudget_->InsertColumn(COL_AMOUNT, listCtrlBudget_->m_columns[COL_AMOUNT].HEADER, wxLIST_FORMAT_RIGHT);
+    listCtrlBudget_->InsertColumn(COL_ESTIMATED, listCtrlBudget_->m_columns[COL_ESTIMATED].HEADER, wxLIST_FORMAT_RIGHT);
+    listCtrlBudget_->InsertColumn(COL_ACTUAL, listCtrlBudget_->m_columns[COL_ACTUAL].HEADER, wxLIST_FORMAT_RIGHT);
 
     /* Get data from inidb */
     for (int i = 0; i < listCtrlBudget_->GetColumnCount(); ++i)
     {
-        int col = Model_Setting::instance().GetIntSetting(wxString::Format(listCtrlBudget_->m_col_width, i), std::get<1>(listCtrlBudget_->m_columns[i]));
+        int col = Model_Setting::instance().GetIntSetting(wxString::Format(listCtrlBudget_->m_col_width, i), listCtrlBudget_->m_columns[i].WIDTH);
         listCtrlBudget_->SetColumnWidth(i, col);
     }
     itemBoxSizer2->Add(listCtrlBudget_, 1, wxGROW | wxALL, 1);
@@ -304,13 +304,13 @@ budgetingListCtrl::budgetingListCtrl(mmBudgetingPanel* cp, wxWindow *parent, con
     , cp_(cp)
     , selectedIndex_(-1)
 {
-    m_columns.push_back(std::make_tuple(_("Icon"), wxLIST_AUTOSIZE_USEHEADER, wxLIST_FORMAT_LEFT));
-    m_columns.push_back(std::make_tuple(_("Category"), wxLIST_AUTOSIZE_USEHEADER, wxLIST_FORMAT_RIGHT));
-    m_columns.push_back(std::make_tuple(_("Sub Category"), wxLIST_AUTOSIZE_USEHEADER, wxLIST_FORMAT_RIGHT));
-    m_columns.push_back(std::make_tuple(_("Frequency"), wxLIST_AUTOSIZE_USEHEADER, wxLIST_FORMAT_RIGHT));
-    m_columns.push_back(std::make_tuple(_("Amount"), wxLIST_AUTOSIZE_USEHEADER, wxLIST_FORMAT_RIGHT));
-    m_columns.push_back(std::make_tuple(_("Estimated"), wxLIST_AUTOSIZE_USEHEADER, wxLIST_FORMAT_RIGHT));
-    m_columns.push_back(std::make_tuple(_("Actual"), wxLIST_AUTOSIZE_USEHEADER, wxLIST_FORMAT_RIGHT));
+    m_columns.push_back(PANEL_COLUMN(_("Icon"), wxLIST_AUTOSIZE_USEHEADER, wxLIST_FORMAT_LEFT));
+    m_columns.push_back(PANEL_COLUMN(_("Category"), wxLIST_AUTOSIZE_USEHEADER, wxLIST_FORMAT_RIGHT));
+    m_columns.push_back(PANEL_COLUMN(_("Sub Category"), wxLIST_AUTOSIZE_USEHEADER, wxLIST_FORMAT_RIGHT));
+    m_columns.push_back(PANEL_COLUMN(_("Frequency"), wxLIST_AUTOSIZE_USEHEADER, wxLIST_FORMAT_RIGHT));
+    m_columns.push_back(PANEL_COLUMN(_("Amount"), wxLIST_AUTOSIZE_USEHEADER, wxLIST_FORMAT_RIGHT));
+    m_columns.push_back(PANEL_COLUMN(_("Estimated"), wxLIST_AUTOSIZE_USEHEADER, wxLIST_FORMAT_RIGHT));
+    m_columns.push_back(PANEL_COLUMN(_("Actual"), wxLIST_AUTOSIZE_USEHEADER, wxLIST_FORMAT_RIGHT));
 
     m_col_width = "BUDGET_COL%d_WIDTH";
 }
@@ -367,7 +367,7 @@ void mmBudgetingPanel::initVirtualListControl()
     mmReportBudget budgetDetails;
 
     bool evaluateTransfer = false;
-    if (mmIniOptions::instance().budgetIncludeTransfers_)
+    if (Option::instance().BudgetIncludeTransfers())
     {
         evaluateTransfer = true;
     }
@@ -395,7 +395,7 @@ void mmBudgetingPanel::initVirtualListControl()
     //Get statistics
     Model_Budget::instance().getBudgetEntry(budgetYearID_, budgetPeriod_, budgetAmt_);
     Model_Category::instance().getCategoryStats(categoryStats_
-        , &date_range, mmIniOptions::instance().ignoreFutureTransactions_
+        , &date_range, Option::instance().IgnoreFutureTransactions()
         , false, true, (evaluateTransfer ? &budgetAmt_ : 0));
 
     const Model_Subcategory::Data_Set& allSubcategories = Model_Subcategory::instance().all(Model_Subcategory::COL_SUBCATEGNAME);
@@ -459,7 +459,7 @@ void mmBudgetingPanel::initVirtualListControl()
         budgetTotals_[category.CATEGID].first = catTotalsEstimated;
         budgetTotals_[category.CATEGID].second = catTotalsActual;
 
-        if ((!mmIniOptions::instance().budgetSetupWithoutSummaries_ || currentView_ == VIEW_SUMM)
+        if ((!Option::instance().BudgetSetupWithoutSummaries() || currentView_ == VIEW_SUMM)
             && DisplayEntryAllowed(-1, category.CATEGID))
         {
             budget_.push_back(std::make_pair(-1, category.CATEGID));

@@ -27,7 +27,7 @@ Copyright (C) 2014 Guan Lisheng (guanlisheng@gmail.com)
 #include <wx/aui/aui.h>
 #include <wx/toolbar.h>
 #include <vector>
-#include "mmOption.h"
+#include "option.h"
 #include "constants.h"
 #include "util.h"
 
@@ -59,8 +59,8 @@ public:
     void setGotoAccountID(int account_id, long transID = -1);
     bool financialYearIsDifferent()
     {
-        return (mmOptions::instance().financialYearStartDayString_   != "1" ||
-                mmOptions::instance().financialYearStartMonthString_ != "1");
+        return (Option::instance().FinancialYearStartDay() != "1" ||
+                Option::instance().FinancialYearStartMonth() != "1");
     }
     /// return the index (mmex::EDocFile) to return the correct file.
     int getHelpFileIndex() const
@@ -148,10 +148,6 @@ private:
     void menuEnableItems(bool enable);
     void updateNavTreeControl();
     void updateReportNavigation(wxTreeItemId& reports, wxTreeItemId& budgeting);
-    void updateReportCategoryExpensesGoesNavigation(wxTreeItemId& categsOverTime);
-    void updateReportCategoryExpensesComesNavigation(wxTreeItemId& posCategs);
-    void updateReportCategoryNavigation(wxTreeItemId& categs);
-    void updateReportPayeeNavigation(wxTreeItemId& payeesOverTime);
     void showTreePopupMenu(const wxTreeItemId& id, const wxPoint& pt);
     void showBeginAppDialog(bool fromScratch = false);
     void SetDataBaseParameters(const wxString& fileName);

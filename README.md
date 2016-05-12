@@ -46,3 +46,5 @@ Platforms
 * We can download dozen of cool reports from [general report](https://github.com/moneymanagerex/general-reports)
 * Star it if you feel it is helpful
 
+#### Developers:
+<script src="https://embed.github.com/view/geojson/moneymanagerex/moneymanagerex/master/developer.geojson"></script>

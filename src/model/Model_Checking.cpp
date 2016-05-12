@@ -16,12 +16,13 @@
  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  ********************************************************/
 
-#include "mmOption.h"
+#include "option.h"
 #include "Model_Checking.h"
 #include "Model_Account.h"
 #include "Model_Payee.h"
 #include "Model_Category.h"
 #include <queue>
+#include "Model_Translink.h"
 
 const std::vector<std::pair<Model_Checking::TYPE, wxString> > Model_Checking::TYPE_CHOICES = 
 {
@@ -405,7 +406,7 @@ void Model_Checking::getEmptyTransaction(Data &data, int accountID)
 {
     data.TRANSID = -1;
     wxDateTime trx_date = wxDateTime::Today();
-    if (mmIniOptions::instance().transDateDefault_ != 0)
+    if (Option::instance().TransDateDefault() != 0)
     {
         auto trans = instance().find(ACCOUNTID(accountID), TRANSDATE(trx_date, LESS_OR_EQUAL));
         std::stable_sort(trans.begin(), trans.end(), SorterByTRANSDATE());
@@ -427,7 +428,7 @@ void Model_Checking::getEmptyTransaction(Data &data, int accountID)
 
     data.TRANSDATE = trx_date.FormatISODate();
     data.ACCOUNTID = accountID;
-    data.STATUS = toShortStatus(all_status()[mmIniOptions::instance().transStatusReconciled_]);
+    data.STATUS = toShortStatus(all_status()[Option::instance().TransStatusReconciled()]);
     data.TRANSCODE = all_type()[WITHDRAWAL];
     data.CATEGID = -1;
     data.SUBCATEGID = -1;
@@ -435,7 +436,7 @@ void Model_Checking::getEmptyTransaction(Data &data, int accountID)
     data.TRANSAMOUNT = 0;
     data.TOTRANSAMOUNT = 0;
     data.TRANSACTIONNUMBER = "";
-    if (mmIniOptions::instance().transPayeeSelectionNone_ != 0) 
+    if (Option::instance().TransCategorySelectionNone() != 0) 
     {
         auto trx = instance().find(TRANSCODE(TRANSFER, NOT_EQUAL)
             , ACCOUNTID(accountID, EQUAL), TRANSDATE(trx_date, LESS_OR_EQUAL));
@@ -445,7 +446,7 @@ void Model_Checking::getEmptyTransaction(Data &data, int accountID)
             std::stable_sort(trx.begin(), trx.end(), SorterByTRANSDATE());
             Model_Payee::Data* payee = Model_Payee::instance().get(trx.rbegin()->PAYEEID);
             if (payee) data.PAYEEID = payee->PAYEEID;
-            if (payee && mmIniOptions::instance().transCategorySelectionNone_ != 0)
+            if (payee && Option::instance().TransCategorySelectionNone() != 0)
             {
                 data.CATEGID = payee->CATEGID;
                 data.SUBCATEGID = payee->SUBCATEGID;
@@ -521,4 +522,14 @@ const wxString Model_Checking::Full_Data::to_json()
     json::Writer::Write(o, ss);
 
     return ss.str();
+}
+
+const bool Model_Checking::foreignTransaction(const Data& data)
+{
+    return (data.TOACCOUNTID > 0) && ((data.TRANSCODE == all_type()[DEPOSIT]) || (data.TRANSCODE == all_type()[WITHDRAWAL]));
+}
+
+const bool Model_Checking::foreignTransactionAsTransfer(const Data& data)
+{
+    return foreignTransaction(data) && (data.TOACCOUNTID == Model_Translink::AS_TRANSFER);
 }

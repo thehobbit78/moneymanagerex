@@ -45,7 +45,7 @@ Model_Infotable& Model_Infotable::instance(wxSQLite3Database* db)
         ins.Set("MMEXVERSION", mmex::version::string);
         ins.Set("DATAVERSION", mmex::DATAVERSION);
         ins.Set("CREATEDATE", wxDateTime::Now());
-        ins.SetDateFormat(mmex::DEFDATEFORMAT);
+        ins.Set("DATEFORMAT", mmex::DEFDATEFORMAT);
     }
 
     return ins;
@@ -154,16 +154,6 @@ const wxColour Model_Infotable::GetColourSetting(const wxString& key, const wxCo
     return default_value;
 }
 
-int Model_Infotable::GetBaseCurrencyId()
-{
-    return this->GetIntInfo("BASECURRENCYID", -1);
-}
-
-void Model_Infotable::SetBaseCurrency(int currency_id)
-{
-    Model_Infotable::instance().Set("BASECURRENCYID", currency_id);
-}
-
 /* Returns true if key setting found */
 bool Model_Infotable::KeyExists(const wxString& key)
 {
@@ -183,17 +173,6 @@ loop_t Model_Infotable::to_loop_t()
     for (const auto &r: instance().all())
         loop += r.to_row_t();
     return loop;
-}
-
-//-------------------------------------------------------------------
-wxString Model_Infotable::DateFormat()
-{
-    return GetStringInfo("DATEFORMAT", mmex::DEFDATEFORMAT);
-}
-
-void Model_Infotable::SetDateFormat(const wxString& date_format_mask)
-{
-    Set("DATEFORMAT", date_format_mask);
 }
 
 //-------------------------------------------------------------------

@@ -33,7 +33,7 @@ Foundation, Inc., 59 Temple Placeuite 330, Boston, MA  02111-1307  USA
 #include "model/Model_Payee.h"
 #include "model/Model_Category.h"
 #include "model/Model_Billsdeposits.h"
-#include "mmOption.h"
+#include "option.h"
 
 /*****************************************************************************
 Turn test ON or OFF in file: defined_test_selection.h
@@ -70,7 +70,7 @@ void Test_FilterTrans_Dialog::setUp()
     m_base_frame->Show(true);
 
     m_test_db.Open(m_test_db_filename);
-    m_dbmodel = new DB_Init_Model();
+    m_dbmodel = new DB_Model();
     m_dbmodel->Init_Model_Tables(&m_test_db);
     m_dbmodel->Init_BaseCurrency();
 

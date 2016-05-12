@@ -37,6 +37,9 @@
 #include "model/Model_Payee.h"
 #include "model/Model_Category.h"
 #include "model/Model_Attachment.h"
+#include "model/Model_Translink.h"
+#include "sharetransactiondialog.h"
+#include "assetdialog.h"
 #include "billsdepositsdialog.h"
 #include <wx/clipbrd.h>
 
@@ -102,7 +105,7 @@ mmCheckingPanel::mmCheckingPanel(wxWindow *parent, mmGUIFrame *frame, int accoun
     , transFilterDlg_(0)
     , m_frame(frame)
 {
-    m_basecurrecyID = Model_Infotable::instance().GetBaseCurrencyId();
+    m_basecurrecyID = Option::instance().BaseCurrency();
     long style = wxTAB_TRAVERSAL | wxNO_BORDER;
     Create(parent, mmID_CHECKING, wxDefaultPosition, wxDefaultSize, style);
 }
@@ -326,7 +329,7 @@ void mmCheckingPanel::CreateControls()
     /* ---------------------- */
     wxPanel* headerPanel = new wxPanel(this, wxID_ANY, wxDefaultPosition
         , wxDefaultSize, wxNO_BORDER | wxTAB_TRAVERSAL);
-    itemBoxSizer9->Add(headerPanel, g_flagsBorder1);
+    itemBoxSizer9->Add(headerPanel, g_flagsBorder1V);
 
     wxBoxSizer* itemBoxSizerVHeader = new wxBoxSizer(wxVERTICAL);
     headerPanel->SetSizer(itemBoxSizerVHeader);
@@ -336,7 +339,7 @@ void mmCheckingPanel::CreateControls()
 
     header_text_ = new wxStaticText( headerPanel, wxID_STATIC, "");
     header_text_->SetFont(this->GetFont().Larger().Bold());
-    itemBoxSizerVHeader2->Add(header_text_, g_flagsBorder1);
+    itemBoxSizerVHeader2->Add(header_text_, g_flagsBorder1H);
 
     wxBoxSizer* itemBoxSizerHHeader2 = new wxBoxSizer(wxHORIZONTAL);
     wxFlexGridSizer* itemFlexGridSizerHHeader2 = new wxFlexGridSizer(5, 1, 1);
@@ -345,20 +348,20 @@ void mmCheckingPanel::CreateControls()
 
     bitmapMainFilter_ = new wxStaticBitmap(headerPanel, wxID_PAGE_SETUP
         , mmBitmap(png::RIGHTARROW));
-    itemFlexGridSizerHHeader2->Add(bitmapMainFilter_, g_flagsBorder1);
+    itemFlexGridSizerHHeader2->Add(bitmapMainFilter_, g_flagsBorder1H);
     bitmapMainFilter_->Connect(wxID_ANY, wxEVT_RIGHT_DOWN
         , wxMouseEventHandler(mmCheckingPanel::OnFilterResetToViewAll), nullptr, this);
     bitmapMainFilter_->Connect(wxID_ANY, wxEVT_LEFT_DOWN
         , wxMouseEventHandler(mmCheckingPanel::OnMouseLeftDown), nullptr, this);
 
     stxtMainFilter_ = new wxStaticText(headerPanel, wxID_ANY, "", wxDefaultPosition, wxSize(250, -1));
-    itemFlexGridSizerHHeader2->Add(stxtMainFilter_, g_flagsBorder1);
+    itemFlexGridSizerHHeader2->Add(stxtMainFilter_, g_flagsBorder1H);
 
     itemFlexGridSizerHHeader2->AddSpacer(20);
 
     bitmapTransFilter_ = new wxStaticBitmap(headerPanel, ID_PANEL_CHECKING_STATIC_BITMAP_FILTER
         , mmBitmap(png::RIGHTARROW));
-    itemFlexGridSizerHHeader2->Add(bitmapTransFilter_, g_flagsBorder1);
+    itemFlexGridSizerHHeader2->Add(bitmapTransFilter_, g_flagsBorder1H);
     bitmapTransFilter_->Connect(wxID_ANY, wxEVT_LEFT_DOWN
         , wxMouseEventHandler(mmCheckingPanel::OnFilterTransactions), nullptr, this);
     bitmapTransFilter_->Connect(wxID_ANY, wxEVT_RIGHT_DOWN
@@ -366,7 +369,7 @@ void mmCheckingPanel::CreateControls()
 
     statTextTransFilter_ = new wxStaticText(headerPanel, wxID_ANY
         , _("Transaction Filter"));
-    itemFlexGridSizerHHeader2->Add(statTextTransFilter_, g_flagsBorder1);
+    itemFlexGridSizerHHeader2->Add(statTextTransFilter_, g_flagsBorder1H);
 
     wxStaticText* itemStaticText12 = new wxStaticText(headerPanel
         , ID_PANEL_CHECKING_STATIC_BALHEADER1, "$", wxDefaultPosition, wxSize(120, -1));
@@ -396,7 +399,7 @@ void mmCheckingPanel::CreateControls()
         , wxID_ANY, wxDefaultPosition, wxSize(200, 200)
         , wxSP_3DBORDER | wxSP_3DSASH | wxNO_BORDER);
 
-    int x = mmIniOptions::instance().ico_size_;
+    int x = Option::instance().IconSize();
     m_imageList.reset(new wxImageList(x, x));
     m_imageList->Add(mmBitmap(png::RECONCILED));
     m_imageList->Add(mmBitmap(png::VOID_STAT));
@@ -444,7 +447,7 @@ void mmCheckingPanel::CreateControls()
     itemPanel12->SetSizer(itemBoxSizer4);
 
     wxBoxSizer* itemButtonsSizer = new wxBoxSizer(wxHORIZONTAL);
-    itemBoxSizer4->Add(itemButtonsSizer, g_flagsBorder1);
+    itemBoxSizer4->Add(itemButtonsSizer, g_flagsBorder1V);
 
     btnNew_ = new wxButton(itemPanel12, wxID_NEW, _("&New "));
     btnNew_->SetToolTip(_("New Transaction"));
@@ -937,17 +940,17 @@ TransactionListCtrl::TransactionListCtrl(
     wxAcceleratorTable tab(sizeof(entries)/sizeof(*entries), entries);
     SetAcceleratorTable(tab);
 
-    m_columns.push_back(std::make_tuple(" ", 25, wxLIST_FORMAT_LEFT));
-    m_columns.push_back(std::make_tuple(_("ID"), wxLIST_AUTOSIZE, wxLIST_FORMAT_LEFT));
-    m_columns.push_back(std::make_tuple(_("Date"), 112, wxLIST_FORMAT_LEFT));
-    m_columns.push_back(std::make_tuple(_("Number"), 70, wxLIST_FORMAT_LEFT));
-    m_columns.push_back(std::make_tuple(_("Payee"), 150, wxLIST_FORMAT_LEFT));
-    m_columns.push_back(std::make_tuple(_("Status"), wxLIST_AUTOSIZE_USEHEADER, wxLIST_FORMAT_LEFT));
-    m_columns.push_back(std::make_tuple(_("Category"), 150, wxLIST_FORMAT_LEFT));
-    m_columns.push_back(std::make_tuple(_("Withdrawal"), wxLIST_AUTOSIZE_USEHEADER, wxLIST_FORMAT_RIGHT));
-    m_columns.push_back(std::make_tuple(_("Deposit"), wxLIST_AUTOSIZE_USEHEADER, wxLIST_FORMAT_RIGHT));
-    m_columns.push_back(std::make_tuple(_("Balance"), wxLIST_AUTOSIZE_USEHEADER, wxLIST_FORMAT_RIGHT));
-    m_columns.push_back(std::make_tuple(_("Notes"), 250, wxLIST_FORMAT_LEFT));
+    m_columns.push_back(PANEL_COLUMN(" ", 25, wxLIST_FORMAT_LEFT));
+    m_columns.push_back(PANEL_COLUMN(_("ID"), wxLIST_AUTOSIZE, wxLIST_FORMAT_LEFT));
+    m_columns.push_back(PANEL_COLUMN(_("Date"), 112, wxLIST_FORMAT_LEFT));
+    m_columns.push_back(PANEL_COLUMN(_("Number"), 70, wxLIST_FORMAT_LEFT));
+    m_columns.push_back(PANEL_COLUMN(_("Payee"), 150, wxLIST_FORMAT_LEFT));
+    m_columns.push_back(PANEL_COLUMN(_("Status"), wxLIST_AUTOSIZE_USEHEADER, wxLIST_FORMAT_LEFT));
+    m_columns.push_back(PANEL_COLUMN(_("Category"), 150, wxLIST_FORMAT_LEFT));
+    m_columns.push_back(PANEL_COLUMN(_("Withdrawal"), wxLIST_AUTOSIZE_USEHEADER, wxLIST_FORMAT_RIGHT));
+    m_columns.push_back(PANEL_COLUMN(_("Deposit"), wxLIST_AUTOSIZE_USEHEADER, wxLIST_FORMAT_RIGHT));
+    m_columns.push_back(PANEL_COLUMN(_("Balance"), wxLIST_AUTOSIZE_USEHEADER, wxLIST_FORMAT_RIGHT));
+    m_columns.push_back(PANEL_COLUMN(_("Notes"), 250, wxLIST_FORMAT_LEFT));
 
     m_col_width = "CHECK_COL%d_WIDTH";
 
@@ -967,9 +970,9 @@ void TransactionListCtrl::createColumns(mmListCtrl &lst)
     {
         long count = lst.GetColumnCount();
         lst.InsertColumn(count
-            , std::get<HEADER>(entry)
-            , std::get<FORMAT>(entry)
-            , Model_Setting::instance().GetIntSetting(wxString::Format(m_col_width, count), std::get<WIDTH>(entry)));
+            , entry.HEADER
+            , entry.FORMAT
+            , Model_Setting::instance().GetIntSetting(wxString::Format(m_col_width, count), entry.WIDTH));
     }
 }
 
@@ -1102,6 +1105,14 @@ void TransactionListCtrl::OnMouseRightClick(wxMouseEvent& event)
     subGlobalOpMenu->Append(MENU_TREEPOPUP_MARK_ADD_FLAG_FOLLOWUP_ALL, _("as needing Followup"));
     subGlobalOpMenu->Append(MENU_TREEPOPUP_MARKDUPLICATE_ALL, _("as Duplicate"));
     menu.Append(MENU_SUBMENU_MARK_ALL, _("Mark all being viewed"), subGlobalOpMenu);
+
+    // Disable menu items not ment for foreign transactions
+    if (Model_Checking::foreignTransaction(m_cp->m_trans.at(m_selectedIndex)))
+    {
+        menu.Enable(MENU_ON_COPY_TRANSACTION, false);
+        menu.Enable(MENU_ON_PASTE_TRANSACTION, false);
+        menu.Enable(MENU_ON_DUPLICATE_TRANSACTION, false);
+    }
 
     PopupMenu(&menu, event.GetPosition());
     this->SetFocus();
@@ -1519,6 +1530,11 @@ void TransactionListCtrl::OnDeleteTransaction(wxCommandEvent& /*event*/)
             {
                 SetItemState(x, 0, wxLIST_STATE_SELECTED | wxLIST_STATE_FOCUSED);
 
+                if (Model_Checking::foreignTransaction(i))
+                {
+                    Model_Translink::RemoveTranslinkEntry(transID);
+                }
+
                 // remove also removes any split transactions
                 Model_Checking::instance().remove(transID);
                 mmAttachmentManage::DeleteAllAttachments(Model_Attachment::reftype_desc(Model_Attachment::TRANSACTION), transID);
@@ -1537,12 +1553,36 @@ void TransactionListCtrl::OnDeleteTransaction(wxCommandEvent& /*event*/)
 void TransactionListCtrl::OnEditTransaction(wxCommandEvent& /*event*/)
 {
     if ((m_selectedIndex < 0) || (GetSelectedItemCount() > 1)) return;
+    Model_Checking::Data checking_entry = m_cp->m_trans[m_selectedIndex];
+    int transaction_id = checking_entry.TRANSID;
 
-    int transaction_id = m_cp->m_trans[m_selectedIndex].TRANSID;
-    mmTransDialog dlg(this, m_cp->m_AccountID, transaction_id);
-    if (dlg.ShowModal() == wxID_OK)
+    if (Model_Checking::foreignTransaction(checking_entry))
     {
-        refreshVisualList(transaction_id);
+        Model_Translink::Data translink = Model_Translink::TranslinkRecord(transaction_id);
+        if (translink.LINKTYPE == Model_Attachment::reftype_desc(Model_Attachment::STOCK))
+        {
+            ShareTransactionDialog dlg(this, &translink, &checking_entry);
+            if (dlg.ShowModal() == wxID_OK)
+            {
+                refreshVisualList(transaction_id);
+            }
+        }
+        else
+        {
+//            mmAssetDialog dlg(this, &translink, &checking_entry);
+//            if (dlg.ShowModal() == wxID_OK)
+//            {
+//                refreshVisualList(transaction_id);
+//            }
+        }
+    }
+    else
+    {
+        mmTransDialog dlg(this, m_cp->m_AccountID, transaction_id);
+        if (dlg.ShowModal() == wxID_OK)
+        {
+            refreshVisualList(transaction_id);
+        }
     }
     topItemIndex_ = GetTopItem() + GetCountPerPage() - 1;
 }
