@@ -297,7 +297,7 @@ void mmNewAcctDialog::CreateControls()
         grid_sizer3->AddGrowableCol(1, 1);
         card_sizer->Add(grid_sizer3, g_flagsExpand);
 
-        grid_sizer3->Add(new wxStaticText(card_tab, wxID_STATIC, _("Held at:")), g_flags);
+        grid_sizer3->Add(new wxStaticText(card_tab, wxID_STATIC, _("Held at:")), g_flagsH);
 
         wxChoice* itemChoice7 = new wxChoice(card_tab, ID_DIALOG_NEWACCT_COMBO_HELDACCT);
         for (const auto& acct : Model_Account::instance().find(Model_Account::ACCOUNTTYPE(Model_Account::all_type()[Model_Account::CHECKING])))
@@ -307,7 +307,7 @@ void mmNewAcctDialog::CreateControls()
         itemChoice7->SetToolTip(_("Specify the bank account where credit card is helded."));
         grid_sizer3->Add(itemChoice7, g_flagsExpand);
 
-        grid_sizer3->Add(new wxStaticText(card_tab, wxID_STATIC, _("Card Type:")), g_flags);
+        grid_sizer3->Add(new wxStaticText(card_tab, wxID_STATIC, _("Card Type:")), g_flagsH);
 
         wxChoice* itemChoice8 = new wxChoice(card_tab, ID_DIALOG_NEWACCT_COMBO_CARDTYPE);
         for (const auto& type : Model_CreditCard::all_type())
@@ -317,14 +317,14 @@ void mmNewAcctDialog::CreateControls()
         itemChoice8->SetToolTip(_("Specify the credit card type."));
         grid_sizer3->Add(itemChoice8, g_flagsExpand);
 
-        grid_sizer3->Add(new wxStaticText(card_tab, wxID_STATIC, _("Card Limit:")), g_flags);
+        grid_sizer3->Add(new wxStaticText(card_tab, wxID_STATIC, _("Card Limit:")), g_flagsH);
 
         wxTextCtrl* itemTextCtrl9 = new wxTextCtrl(card_tab
             , ID_DIALOG_NEWACCT_TEXTCTRL_CARDLIMIT, "", wxDefaultPosition, wxDefaultSize, 0, mmCalcValidator());
         itemTextCtrl9->SetToolTip(_("Enter the credit card limit. This is used to signal limit exceed when inserting transactions."));
         grid_sizer3->Add(itemTextCtrl9, g_flagsExpand);
 
-        grid_sizer3->Add(new wxStaticText(card_tab, wxID_STATIC, _("Interest Rate:")), g_flags);
+        grid_sizer3->Add(new wxStaticText(card_tab, wxID_STATIC, _("Interest Rate:")), g_flagsH);
 
         wxTextCtrl* itemTextCtrl10 = new wxTextCtrl(card_tab
             , ID_DIALOG_NEWACCT_TEXTCTRL_CARDINTERESTRATE, "", wxDefaultPosition, wxDefaultSize, 0, mmCalcValidator());
@@ -336,16 +336,16 @@ void mmNewAcctDialog::CreateControls()
             , _("Auto Balance"), wxDefaultPosition, wxDefaultSize, wxCHK_2STATE);
         itemCheckBox11->SetToolTip(_("Specify if you want to insert a repeating transaction for monthly refund. This is used only for credit cards."));
         grid_sizer3->AddSpacer(1);
-        grid_sizer3->Add(itemCheckBox11, g_flags);
+        grid_sizer3->Add(itemCheckBox11, g_flagsH);
 
-        grid_sizer3->Add(new wxStaticText(card_tab, wxID_STATIC, _("Balance Date")), g_flags);
+        grid_sizer3->Add(new wxStaticText(card_tab, wxID_STATIC, _("Balance Date")), g_flagsH);
 
         wxDatePickerCtrl *itemDate1 = new wxDatePickerCtrl(card_tab, ID_DIALOG_NEWACCT_TEXTCTRL_CARDAUTOBALANCEDATE
             , wxDefaultDateTime, wxDefaultPosition, wxSize(150, -1), wxDP_DROPDOWN | wxDP_SHOWCENTURY);
-        grid_sizer3->Add(itemDate1, g_flags);
+        grid_sizer3->Add(itemDate1, g_flagsH);
         itemDate1->SetToolTip(_("Specify the balance date of the credit card"));
 
-        grid_sizer3->Add(new wxStaticText(card_tab, wxID_STATIC, _("Balance amount:")), g_flags);
+        grid_sizer3->Add(new wxStaticText(card_tab, wxID_STATIC, _("Balance amount:")), g_flagsH);
 
         wxTextCtrl* itemTextCtrl11 = new wxTextCtrl(card_tab
             , ID_DIALOG_NEWACCT_TEXTCTRL_CARDAUTOBALANCEAMNT, "", wxDefaultPosition, wxDefaultSize, 0, mmCalcValidator());
