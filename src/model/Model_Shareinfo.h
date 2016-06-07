@@ -43,23 +43,24 @@ public:
     */
     static Model_Shareinfo& instance();
 
-public:
+private:
     /** Return the list of share records for the given checking_id */
     static Model_Shareinfo::Data_Set ShareList(const int checking_id);
 
+public:
     /* Return the share record for the checking account */
-    static Model_Shareinfo::Data ShareEntry(const int checking_id);
+    static Model_Shareinfo::Data* ShareEntry(const int checking_id);
 
     /**
-    * Set the share record for the checking account.
-    * Create one if the record does not exist
+    Create a Share record if it does not exist.
+    save the share record linked to the checking account.
     */
-    static void ShareEntry(const int checking_id
-        , const double share_number
-        , const double share_price
-        , const double share_commission
-        , const wxString share_lot);
+    static void ShareEntry(int checking_id
+        , double share_number
+        , double share_price
+        , double share_commission
+        , const wxString& share_lot);
 
-    /* Remove the share entry associated with the checking account entry */
+    /* Remove the share entry if it exists */
     static void RemoveShareEntry(const int checking_id);
 };

@@ -21,7 +21,6 @@ Copyright (C) 2013, 2014 Nikolay
 #ifndef MM_EX_CHECKINGPANEL_H_
 #define MM_EX_CHECKINGPANEL_H_
 //----------------------------------------------------------------------------
-#include "filtertransdialog.h"
 #include "mmpanelbase.h"
 #include "reports/mmDateRange.h"
 #include "model/Model_Checking.h"
@@ -38,7 +37,7 @@ class TransactionListCtrl : public mmListCtrl
 public:
 
     TransactionListCtrl(mmCheckingPanel *cp, wxWindow *parent
-        , const wxWindowID id);
+        , const wxWindowID id = wxID_ANY);
     
     ~TransactionListCtrl();
 
@@ -278,7 +277,7 @@ private:
     wxStaticText* statTextTransFilter_;
     wxStaticBitmap* bitmapTransFilter_;
     wxStaticBitmap* bitmapMainFilter_;
-    mmFilterTransactionsDialog* transFilterDlg_;
+    mmFilterTransactionsDialog* m_trans_filter_dlg;
 
     int currentView_;
     int m_AccountID;
@@ -311,7 +310,7 @@ private:
         const wxPoint& pos = wxDefaultPosition,
         const wxSize& size = wxDefaultSize,
         long style = wxTAB_TRAVERSAL | wxNO_BORDER,
-        const wxString& name = wxPanelNameStr
+        const wxString& name = "mmCheckingPanel" 
     );
     void enableEditDeleteButtons(bool en);
 

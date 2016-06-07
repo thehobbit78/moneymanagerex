@@ -41,7 +41,7 @@ public:
         , const wxPoint &pos = wxDefaultPosition
         , const wxSize &size = wxDefaultSize
         , long style = wxTAB_TRAVERSAL
-        , const wxString &name = wxPanelNameStr);
+        , const wxString &name = "UserTransactionPanel");
 
     ~UserTransactionPanel();
 
@@ -57,9 +57,7 @@ public:
 
     int TransactionType();
     Model_Translink::CHECKING_TYPE CheckingType();
-    void SetCheckingType(Model_Translink::CHECKING_TYPE ct);
-    const wxString CurrencySymbol();
-    Model_Currency::Data* GetCurrencyData();
+    void CheckingType(Model_Translink::CHECKING_TYPE ct);
 
 private:
     Model_Checking::Data* m_checking_entry;
@@ -73,6 +71,8 @@ private:
 private:
     void Create();
     void DataToControls();
+    void SetLastPayeeAndCategory(const int account_id);
+
     void OnTransAccountButton(wxCommandEvent& WXUNUSED(event));
     void OnTransCurrencyButton(wxCommandEvent& WXUNUSED(event));
     void OnTransPayeeButton(wxCommandEvent& WXUNUSED(event));

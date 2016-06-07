@@ -19,24 +19,25 @@
 #include "Model_Account.h"
 #include "Model_Stock.h"
 #include "Model_Translink.h"
+#include "Model_Shareinfo.h"
 #include "Model_CreditCard.h"
 
 const std::vector<std::pair<Model_Account::STATUS_ENUM, wxString> > Model_Account::STATUS_CHOICES =
 {
-    std::make_pair(Model_Account::OPEN, wxString(wxTRANSLATE("Open"))),
-    std::make_pair(Model_Account::CLOSED, wxString(wxTRANSLATE("Closed")))
+    {Model_Account::OPEN, wxString(wxTRANSLATE("Open"))},
+    {Model_Account::CLOSED, wxString(wxTRANSLATE("Closed"))}
 };
 
 const std::vector<std::pair<Model_Account::TYPE, wxString> > Model_Account::TYPE_CHOICES =
 {
-    std::make_pair(Model_Account::CASH, wxString(wxTRANSLATE("Cash"))),
-    std::make_pair(Model_Account::CHECKING, wxString(wxTRANSLATE("Checking"))),
-    std::make_pair(Model_Account::CREDIT_CARD, wxString(wxTRANSLATE("Credit Card"))),
-    std::make_pair(Model_Account::LOAN, wxString(wxTRANSLATE("Loan"))),
-    std::make_pair(Model_Account::TERM, wxString(wxTRANSLATE("Term"))),
-    std::make_pair(Model_Account::INVESTMENT, wxString(wxTRANSLATE("Investment"))),
-    std::make_pair(Model_Account::ASSET, wxString(wxTRANSLATE("Asset"))),
-    std::make_pair(Model_Account::SHARES, wxString(wxTRANSLATE("Shares"))),
+    {Model_Account::CASH, wxString(wxTRANSLATE("Cash"))},
+    {Model_Account::CHECKING, wxString(wxTRANSLATE("Checking"))},
+    {Model_Account::CREDIT_CARD, wxString(wxTRANSLATE("Credit Card"))},
+    {Model_Account::LOAN, wxString(wxTRANSLATE("Loan"))},
+    {Model_Account::TERM, wxString(wxTRANSLATE("Term"))},
+    {Model_Account::INVESTMENT, wxString(wxTRANSLATE("Investment"))},
+    {Model_Account::ASSET, wxString(wxTRANSLATE("Asset"))},
+    {Model_Account::SHARES, wxString(wxTRANSLATE("Shares"))},
 };
 
 Model_Account::Model_Account()
@@ -131,7 +132,15 @@ bool Model_Account::remove(int id)
 {
     this->Savepoint();
     for (const auto& r: Model_Checking::instance().find_or(Model_Checking::ACCOUNTID(id), Model_Checking::TOACCOUNTID(id)))
+    {
+        if (Model_Checking::foreignTransaction(r))
+        {
+            Model_Shareinfo::RemoveShareEntry(r.TRANSID);
+            Model_Translink::Data tr = Model_Translink::TranslinkRecord(r.TRANSID);
+            Model_Translink::instance().remove(tr.TRANSLINKID);
+        }
         Model_Checking::instance().remove(r.TRANSID);
+    }
     for (const auto& r: Model_Billsdeposits::instance().find_or(Model_Billsdeposits::ACCOUNTID(id), Model_Billsdeposits::TOACCOUNTID(id)))
         Model_Billsdeposits::instance().remove(r.BDID);
 
@@ -223,8 +232,8 @@ std::pair<double, double> Model_Account::investment_balance(const Data* r)
     std::pair<double /*origianl input value*/, double /**/> sum;
     for (const auto& stock: Model_Stock::instance().find(Model_Stock::HELDAT(r->ACCOUNTID)))
     {
-        sum.first += stock.VALUE;
-        sum.second += Model_Stock::value(stock);
+        sum.first += Model_Stock::CurrentValue(stock);
+        sum.second += Model_Stock::InvestmentValue(stock);
     }
     return sum;
 }

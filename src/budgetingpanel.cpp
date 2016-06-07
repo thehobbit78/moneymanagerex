@@ -29,6 +29,7 @@
 #include "model/Model_Infotable.h"
 #include "model/Model_Budgetyear.h"
 #include "model/Model_Category.h"
+#include "model/Model_Usage.h"
 
 enum
 {
@@ -106,6 +107,7 @@ bool mmBudgetingPanel::Create(wxWindow *parent
         listCtrlBudget_->EnsureVisible(0);
 
     this->windowsFreezeThaw();
+    Model_Usage::instance().pageview(name, name);
     return TRUE;
 }
 
@@ -608,7 +610,7 @@ int mmBudgetingPanel::GetItemImage(long item) const
     if ((estimated == 0.0) && (actual == 0.0)) return 3;
     if ((estimated == 0.0) && (actual != 0.0)) return 2;
     if (estimated < actual) return 0;
-    if (fabs(estimated - actual)  < 0.001) return 0;
+    if (std::fabs(estimated - actual)  < 0.001) return 0;
     return 1;
 }
 

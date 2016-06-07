@@ -27,6 +27,7 @@
 #include "model/Model_Category.h"
 #include "model/Model_Payee.h"
 #include "model/Model_Setting.h"
+#include "model/Model_Usage.h"
 
 enum
 {
@@ -192,6 +193,7 @@ bool mmBillsDepositsPanel::Create(wxWindow *parent
     initVirtualListControl();
 
     this->windowsFreezeThaw();
+    Model_Usage::instance().pageview(name, name);
 
     return TRUE;
 }
@@ -513,14 +515,14 @@ wxString mmBillsDepositsPanel::GetRemainingDays(const Model_Billsdeposits::Data*
 
     if (daysRemaining < 0)
     {
-        text = wxString::Format(_("%d days delay!"), abs(daysRemaining));
+        text = wxString::Format(_("%d days delay!"), std::abs(daysRemaining));
         if (((repeats > 10) && (repeats < 15)) && (item->NUMOCCURRENCES < 0))
             text = _("Inactive");
     }
 
     if (daysOverdue < 0)
     {
-        text = wxString::Format(_("%d days overdue!"), abs(daysOverdue));
+        text = wxString::Format(_("%d days overdue!"), std::abs(daysOverdue));
         if (((repeats > 10) && (repeats < 15)) && (item->NUMOCCURRENCES < 0))
             text = _("Inactive");
     }
@@ -579,7 +581,7 @@ int billsDepositsListCtrl::OnGetItemImage(long item) const
 
     if (daysRemaining < 0)
     {
-        daysRemainingStr = wxString::Format(_("%d days overdue!"), abs(daysRemaining));
+        daysRemainingStr = wxString::Format(_("%d days overdue!"), std::abs(daysRemaining));
         if (((repeats > 10) && (repeats < 15)) && (m_bdp->bills_[item].NUMOCCURRENCES < 0))
             daysRemainingStr = _("Inactive");
     }

@@ -26,18 +26,18 @@
 
 const std::vector<std::pair<Model_Checking::TYPE, wxString> > Model_Checking::TYPE_CHOICES = 
 {
-    std::make_pair(Model_Checking::WITHDRAWAL, wxString(wxTRANSLATE("Withdrawal")))
-    , std::make_pair(Model_Checking::DEPOSIT, wxString(wxTRANSLATE("Deposit")))
-    , std::make_pair(Model_Checking::TRANSFER, wxString(wxTRANSLATE("Transfer")))
+    {Model_Checking::WITHDRAWAL, wxString(wxTRANSLATE("Withdrawal"))}
+    , {Model_Checking::DEPOSIT, wxString(wxTRANSLATE("Deposit"))}
+    , {Model_Checking::TRANSFER, wxString(wxTRANSLATE("Transfer"))}
 };
 
 const std::vector<std::pair<Model_Checking::STATUS_ENUM, wxString> > Model_Checking::STATUS_ENUM_CHOICES =
 {
-    std::make_pair(Model_Checking::NONE, wxTRANSLATE("None"))
-    , std::make_pair(Model_Checking::RECONCILED, wxString(wxTRANSLATE("Reconciled")))
-    , std::make_pair(Model_Checking::VOID_, wxString(wxTRANSLATE("Void")))
-    , std::make_pair(Model_Checking::FOLLOWUP, wxString(wxTRANSLATE("Follow up")))
-    , std::make_pair(Model_Checking::DUPLICATE_, wxString(wxTRANSLATE("Duplicate")))
+    {Model_Checking::NONE, wxTRANSLATE("None")}
+    , {Model_Checking::RECONCILED, wxString(wxTRANSLATE("Reconciled"))}
+    , {Model_Checking::VOID_, wxString(wxTRANSLATE("Void"))}
+    , {Model_Checking::FOLLOWUP, wxString(wxTRANSLATE("Follow up"))}
+    , {Model_Checking::DUPLICATE_, wxString(wxTRANSLATE("Duplicate"))}
 };
 
 Model_Checking::Model_Checking(): Model<DB_Table_CHECKINGACCOUNT_V1>()
@@ -378,7 +378,7 @@ wxString Model_Checking::Full_Data::info() const
 void Model_Checking::getFrequentUsedNotes(std::vector<wxString> &frequentNotes, int accountID)
 {
     frequentNotes.clear();
-    int max = 20;
+    size_t max = 20;
 
     const auto notes = instance().find(NOTES("", NOT_EQUAL)
         , accountID > 0 ? ACCOUNTID(accountID) : ACCOUNTID(-1, NOT_EQUAL));
@@ -436,7 +436,7 @@ void Model_Checking::getEmptyTransaction(Data &data, int accountID)
     data.TRANSAMOUNT = 0;
     data.TOTRANSAMOUNT = 0;
     data.TRANSACTIONNUMBER = "";
-    if (Option::instance().TransCategorySelectionNone() != 0) 
+    if (Option::instance().TransCategorySelection() != Option::NONE)
     {
         auto trx = instance().find(TRANSCODE(TRANSFER, NOT_EQUAL)
             , ACCOUNTID(accountID, EQUAL), TRANSDATE(trx_date, LESS_OR_EQUAL));
@@ -446,7 +446,7 @@ void Model_Checking::getEmptyTransaction(Data &data, int accountID)
             std::stable_sort(trx.begin(), trx.end(), SorterByTRANSDATE());
             Model_Payee::Data* payee = Model_Payee::instance().get(trx.rbegin()->PAYEEID);
             if (payee) data.PAYEEID = payee->PAYEEID;
-            if (payee && Option::instance().TransCategorySelectionNone() != 0)
+            if (payee && Option::instance().TransCategorySelection() != Option::NONE)
             {
                 data.CATEGID = payee->CATEGID;
                 data.SUBCATEGID = payee->SUBCATEGID;

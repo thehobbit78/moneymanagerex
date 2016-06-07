@@ -72,26 +72,26 @@ void OptionSettingsMisc::Create()
     wxStaticBoxSizer* transSettingsStaticBoxSizer = new wxStaticBoxSizer(transSettingsStaticBox, wxVERTICAL);
     othersPanelSizer->Add(transSettingsStaticBoxSizer, wxSizerFlags(g_flagsExpand).Proportion(0));
 
-    wxArrayString defaultValues_;
-    defaultValues_.Add(_("None"));
-    defaultValues_.Add(_("Last Used"));
+    wxArrayString default_values;
+    default_values.Add(_("None"));
+    default_values.Add(_("Last Used"));
 
     wxChoice* defaultDateChoice = new wxChoice(this
         , ID_DIALOG_OPTIONS_DEFAULT_TRANSACTION_DATE
-        , wxDefaultPosition, wxSize(140, -1), defaultValues_);
+        , wxDefaultPosition, wxSize(140, -1), default_values);
     defaultDateChoice->SetSelection(Option::instance().TransDateDefault());
 
-    defaultValues_[1] = (_("Last used for payee"));
-    defaultValues_.Add(_("Unused"));
     wxChoice* defaultPayeeChoice = new wxChoice(this
         , ID_DIALOG_OPTIONS_DEFAULT_TRANSACTION_PAYEE
-        , wxDefaultPosition, wxSize(140, -1), defaultValues_);
-    defaultPayeeChoice->SetSelection(Option::instance().TransPayeeSelectionNone());
+        , wxDefaultPosition, wxSize(140, -1), default_values);
+    defaultPayeeChoice->SetSelection(Option::instance().TransPayeeSelection());
 
+    default_values[1] = (_("Last used for payee"));
+    default_values.Add(_("Unused"));
     wxChoice* defaultCategoryChoice = new wxChoice(this
         , ID_DIALOG_OPTIONS_DEFAULT_TRANSACTION_CATEGORY
-        , wxDefaultPosition, defaultPayeeChoice->GetSize(), defaultValues_);
-    defaultCategoryChoice->SetSelection(Option::instance().TransCategorySelectionNone());
+        , wxDefaultPosition, defaultPayeeChoice->GetSize(), default_values);
+    defaultCategoryChoice->SetSelection(Option::instance().TransCategorySelection());
 
     wxChoice* default_status = new wxChoice(this
         , ID_DIALOG_OPTIONS_DEFAULT_TRANSACTION_STATUS
@@ -200,10 +200,10 @@ void OptionSettingsMisc::SaveStocksUrl()
 void OptionSettingsMisc::SaveSettings()
 {
     wxChoice* itemChoice = (wxChoice*)FindWindow(ID_DIALOG_OPTIONS_DEFAULT_TRANSACTION_PAYEE);
-    Option::instance().TransPayeeSelectionNone(itemChoice->GetSelection());
+    Option::instance().TransPayeeSelection(itemChoice->GetSelection());
 
     itemChoice = (wxChoice*)FindWindow(ID_DIALOG_OPTIONS_DEFAULT_TRANSACTION_CATEGORY);
-    Option::instance().TransCategorySelectionNone(itemChoice->GetSelection());
+    Option::instance().TransCategorySelection(itemChoice->GetSelection());
 
     itemChoice = (wxChoice*)FindWindow(ID_DIALOG_OPTIONS_DEFAULT_TRANSACTION_STATUS);
     Option::instance().TransStatusReconciled(itemChoice->GetSelection());

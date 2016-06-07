@@ -38,6 +38,7 @@ Copyright (C) 2014 Nikolay
 #include "model/Model_Billsdeposits.h"
 #include "model/Model_Category.h"
 #include "model/Model_Translink.h"
+#include "model/Model_Usage.h"
 #include "model/Model_CreditCard.h"
 
 #include "cajun/json/elements.h"
@@ -152,12 +153,13 @@ void htmlWidgetStocks::calculate_stats(std::map<int, std::pair<double, double> >
             conv_rate = currency->BASECONVRATE;
         }   
         std::pair<double, double>& values = stockStats[stock.HELDAT];
-        double gain_lost = (stock.CURRENTPRICE * stock.NUMSHARES - (stock.PURCHASEPRICE * stock.NUMSHARES) - stock.COMMISSION);
+        double current_value = Model_Stock::CurrentValue(stock);
+        double gain_lost = (current_value - stock.VALUE - stock.COMMISSION);
         values.first += gain_lost;
-        values.second += stock.VALUE;
+        values.second += current_value;
         if (account && account->STATUS == VIEW_ACCOUNTS_OPEN_STR)
         {   
-            grand_total_ += stock.VALUE * conv_rate;
+            grand_total_ += current_value * conv_rate;
             grand_gain_lost_ += gain_lost * conv_rate;
         }   
     }   
@@ -354,9 +356,9 @@ wxString htmlWidgetBillsAndDeposits::getHTMLText()
         int daysOverdue = Model_Billsdeposits::instance().daysOverdue(&entry);
         wxString daysRemainingStr = (daysPayment > 0
             ? wxString::Format(_("%d days remaining"), daysPayment)
-            : wxString::Format(_("%d days delay!"), abs(daysPayment)));
+            : wxString::Format(_("%d days delay!"), std::abs(daysPayment)));
         if (daysOverdue < 0)
-            daysRemainingStr = wxString::Format(_("%d days overdue!"), abs(daysOverdue));
+            daysRemainingStr = wxString::Format(_("%d days overdue!"), std::abs(daysOverdue));
 
         wxString payeeStr = "";
         if (Model_Billsdeposits::type(entry) == Model_Billsdeposits::TRANSFER)
@@ -517,13 +519,15 @@ bool mmHomePagePanel::Create(wxWindow *parent
     , const wxString& name)
 {
     SetExtraStyle(GetExtraStyle() | wxWS_EX_BLOCK_EVENTS);
-    wxPanel::Create(parent, winid, pos, size, style, name);
+    wxPanelBase::Create(parent, winid, pos, size, style, name);
 
     CreateControls();
     GetSizer()->Fit(this);
     GetSizer()->SetSizeHints(this);
 
     createHTML();
+
+    Model_Usage::instance().pageview(name, name);
 
     return TRUE;
 }
@@ -646,6 +650,10 @@ void mmHomePagePanel::get_account_stats(std::map<int, std::pair<double, double> 
         if (ignoreFuture && Model_Checking::TRANSDATE(trx).IsLaterThan(today))
             continue; //skip future dated transactions
 
+        // Do not include asset or stock transfers in income expense calculations.
+        if (Model_Checking::foreignTransactionAsTransfer(trx))
+            continue;
+
         if (Model_Checking::status(trx) == Model_Checking::FOLLOWUP) this->countFollowUp_++;
 
         accountStats[trx.ACCOUNTID].first += Model_Checking::reconciled(trx, trx.ACCOUNTID);
@@ -682,12 +690,10 @@ void mmHomePagePanel::getExpensesIncomeStats(std::map<int, std::pair<double, dou
                 continue; //skip future dated transactions
         }
         
-        // Check if this is a foreign transaction
-        if (Model_Checking::foreignTransaction(pBankTransaction) && pBankTransaction.TOACCOUNTID == Model_Translink::AS_TRANSFER)
-        {
-            continue; // Do not include foreign transfer transactions in income/expense calculations.
-        }
-        
+        // Do not include asset or stock transfers in income expense calculations.
+        if (Model_Checking::foreignTransactionAsTransfer(pBankTransaction))
+            continue;
+
         // We got this far, get the currency conversion rate for this account
         Model_Account::Data *account = Model_Account::instance().get(pBankTransaction.ACCOUNTID);
         double convRate = (account ? Model_Account::currency(account)->BASECONVRATE : 1);

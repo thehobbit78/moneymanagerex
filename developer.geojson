@@ -3,13 +3,23 @@
   "features": [
     {
       "type": "Feature",
+      "properties": { "name" : "Alen Siljak"},
+      "geometry": { "type": "Point", "coordinates": [16.3697, 48.2088] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name" : "Gabriele Villa"},
+      "geometry": { "type": "Point", "coordinates": [9.977855, 45.673776] }
+    },
+    {
+      "type": "Feature",
       "properties": { "name" : "Lisheng Guan", "href" : "http://guanlisheng.com/" },
       "geometry": { "type": "Point", "coordinates": [116.39053344726561, 39.916319613808135] }
     },
     {
       "type": "Feature",
       "properties": { "name" : "James Higley" },
-      "geometry": { "type": "Point", "coordinates": [-111.54696084559, 40.72626337409] }
+      "geometry": { "type": "Point", "coordinates": [-111.741117, 40.371423] }
     },
     {
       "type": "Feature",

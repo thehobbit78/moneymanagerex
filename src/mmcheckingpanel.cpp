@@ -16,6 +16,7 @@
  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  ********************************************************/
 
+#include "filtertransdialog.h"
 #include "mmcheckingpanel.h"
 #include "paths.h"
 #include "constants.h"
@@ -38,6 +39,7 @@
 #include "model/Model_Category.h"
 #include "model/Model_Attachment.h"
 #include "model/Model_Translink.h"
+#include "model/Model_Usage.h"
 #include "sharetransactiondialog.h"
 #include "assetdialog.h"
 #include "billsdepositsdialog.h"
@@ -102,7 +104,7 @@ mmCheckingPanel::mmCheckingPanel(wxWindow *parent, mmGUIFrame *frame, int accoun
     , m_AccountID(accountID)
     , m_account(Model_Account::instance().get(accountID))
     , m_currency(Model_Account::currency(m_account))
-    , transFilterDlg_(0)
+    , m_trans_filter_dlg(0)
     , m_frame(frame)
 {
     m_basecurrecyID = Option::instance().BaseCurrency();
@@ -117,7 +119,7 @@ mmCheckingPanel::mmCheckingPanel(wxWindow *parent, mmGUIFrame *frame, int accoun
 */
 mmCheckingPanel::~mmCheckingPanel()
 {
-    if (transFilterDlg_) delete transFilterDlg_;
+    if (m_trans_filter_dlg) delete m_trans_filter_dlg;
 }
 
 bool mmCheckingPanel::Create(
@@ -133,7 +135,7 @@ bool mmCheckingPanel::Create(
     CreateControls();
 
     transFilterActive_ = false;
-    transFilterDlg_    = new mmFilterTransactionsDialog(this);
+    m_trans_filter_dlg    = new mmFilterTransactionsDialog(this);
     SetTransactionFilterState(true);
 
     initViewTransactionsHeader();
@@ -143,6 +145,8 @@ bool mmCheckingPanel::Create(
     GetSizer()->Fit(this);
     GetSizer()->SetSizeHints(this);
     this->windowsFreezeThaw();
+
+    Model_Usage::instance().pageview(name, name);
 
     return true;
 }
@@ -207,7 +211,7 @@ void mmCheckingPanel::filterTable()
 
         if (transFilterActive_)
         {
-            if (!transFilterDlg_->checkAll(tran, m_AccountID, splits))
+            if (!m_trans_filter_dlg->checkAll(tran, m_AccountID, splits))
                 continue;
         }
         else
@@ -409,8 +413,7 @@ void mmCheckingPanel::CreateControls()
     m_imageList->Add(mmBitmap(png::UPARROW));
     m_imageList->Add(mmBitmap(png::DOWNARROW));
 
-    m_listCtrlAccount = new TransactionListCtrl(this, itemSplitterWindow10
-        , wxID_ANY);
+    m_listCtrlAccount = new TransactionListCtrl(this, itemSplitterWindow10);
 
     m_listCtrlAccount->SetImageList(m_imageList.get(), wxIMAGE_LIST_SMALL);
     m_listCtrlAccount->setSortOrder(m_listCtrlAccount->g_asc);
@@ -714,6 +717,11 @@ void mmCheckingPanel::DeleteViewedTransactions()
     Model_Checking::instance().Savepoint();
     for (const auto& tran: this->m_trans)
     {
+        if (Model_Checking::foreignTransaction(tran))
+        {
+            Model_Translink::RemoveTranslinkEntry(tran.TRANSID);
+        }
+
         // remove also removes any split transactions
         Model_Checking::instance().remove(tran.TRANSID);
         mmAttachmentManage::DeleteAllAttachments(Model_Attachment::reftype_desc(Model_Attachment::TRANSACTION), tran.TRANSID);
@@ -743,8 +751,8 @@ void mmCheckingPanel::OnFilterTransactions(wxMouseEvent& event)
     int e = event.GetEventType();
 
     if (e == wxEVT_LEFT_DOWN) {
-        transFilterDlg_->setAccountToolTip(_("Select account used in transfer transactions"));
-        transFilterActive_ = (transFilterDlg_->ShowModal() == wxID_OK && transFilterDlg_->somethingSelected());
+        m_trans_filter_dlg->setAccountToolTip(_("Select account used in transfer transactions"));
+        transFilterActive_ = (m_trans_filter_dlg->ShowModal() == wxID_OK && m_trans_filter_dlg->somethingSelected());
     } else {
         if (transFilterActive_ == false) return;
         transFilterActive_ = false;
@@ -777,7 +785,7 @@ const wxString mmCheckingPanel::getItem(long item, long column)
     case TransactionListCtrl::COL_STATUS:
         return tran.STATUS;
     case TransactionListCtrl::COL_WITHDRAWAL:
-        return tran.AMOUNT <= 0 ? Model_Currency::toString(fabs(tran.AMOUNT), this->m_currency) : "";
+        return tran.AMOUNT <= 0 ? Model_Currency::toString(std::fabs(tran.AMOUNT), this->m_currency) : "";
     case TransactionListCtrl::COL_DEPOSIT:
         return tran.AMOUNT > 0 ? Model_Currency::toString(tran.AMOUNT, this->m_currency) : "";
     case TransactionListCtrl::COL_BALANCE:
@@ -1027,13 +1035,22 @@ void TransactionListCtrl::OnMouseRightClick(wxMouseEvent& event)
     bool multiselect = (GetSelectedItemCount() > 1);
     bool type_transfer = false;
     bool have_category = false;
+    bool is_foreign = false;
     if (m_selectedIndex > -1)
     {
         const Model_Checking::Full_Data& tran = m_cp->m_trans.at(m_selectedIndex);
         if (Model_Checking::type(tran.TRANSCODE) == Model_Checking::TRANSFER)
+        {
             type_transfer = true;
+        }
         if (!tran.has_split())
+        {
             have_category = true;
+        }
+        if (Model_Checking::foreignTransaction(tran))
+        {
+            is_foreign = true;
+        }
     }
     wxMenu menu;
     menu.Append(MENU_TREEPOPUP_NEW_WITHDRAWAL, _("&New Withdrawal"));
@@ -1056,7 +1073,7 @@ void TransactionListCtrl::OnMouseRightClick(wxMouseEvent& event)
     if (hide_menu_item || multiselect) menu.Enable(MENU_ON_DUPLICATE_TRANSACTION, false);
 
     menu.Append(MENU_TREEPOPUP_MOVE2, _("&Move Transaction"));
-    if (hide_menu_item || multiselect || type_transfer || (Model_Account::checking_account_num() < 2))
+    if (hide_menu_item || multiselect || type_transfer || (Model_Account::checking_account_num() < 2) || is_foreign)
         menu.Enable(MENU_TREEPOPUP_MOVE2, false);
 
     menu.AppendSeparator();
@@ -1144,7 +1161,7 @@ void TransactionListCtrl::OnMarkTransaction(wxCommandEvent& event)
 
     bool bRefreshRequired = (status == "V") || (org_status == "V");
 
-    if ((m_cp->transFilterActive_ && m_cp->transFilterDlg_->getStatusCheckBox()) || bRefreshRequired)
+    if ((m_cp->transFilterActive_ && m_cp->m_trans_filter_dlg->getStatusCheckBox()) || bRefreshRequired)
     {
         refreshVisualList(m_cp->m_trans[m_selectedIndex].TRANSID);
     }
@@ -1533,6 +1550,7 @@ void TransactionListCtrl::OnDeleteTransaction(wxCommandEvent& /*event*/)
                 if (Model_Checking::foreignTransaction(i))
                 {
                     Model_Translink::RemoveTranslinkEntry(transID);
+                    m_cp->m_frame->RefreshNavigationTree();
                 }
 
                 // remove also removes any split transactions
@@ -1569,11 +1587,11 @@ void TransactionListCtrl::OnEditTransaction(wxCommandEvent& /*event*/)
         }
         else
         {
-//            mmAssetDialog dlg(this, &translink, &checking_entry);
-//            if (dlg.ShowModal() == wxID_OK)
-//            {
-//                refreshVisualList(transaction_id);
-//            }
+            mmAssetDialog dlg(this, m_cp->m_frame, &translink, &checking_entry);
+            if (dlg.ShowModal() == wxID_OK)
+            {
+                refreshVisualList(transaction_id);
+            }
         }
     }
     else

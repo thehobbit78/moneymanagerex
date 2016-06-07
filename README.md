@@ -14,16 +14,14 @@ Platforms
 
 [![AppVeyor](https://img.shields.io/appveyor/ci/guanlisheng/moneymanagerex/master.svg?label=Windows)](https://ci.appveyor.com/project/guanlisheng/moneymanagerex)
 [![Travis](https://img.shields.io/travis/moneymanagerex/moneymanagerex/master.svg?label=OSX)](http://travis-ci.org/moneymanagerex/moneymanagerex)
-
-
 [![Ohloh](http://www.ohloh.net/p/moneymanagerex/widgets/project_thin_badge.gif)](https://www.ohloh.net/p/moneymanagerex)
-[![bountysource](https://www.bountysource.com/badge/team?team_id=10686&style=bounties_received)](https://www.bountysource.com/teams/money-manager-ex)
 
 
 ### MMEX is mainly written in C++11 and built on:
 * [wxWidgets](http://wxwidgets.org/) 3.0+
 * [wxSqlite3](https://github.com/utelle/wxsqlite3)
 * [SQLite3](http://sqlite.org/)
+* [Mongoose](https://www.cesanta.com/)
 * [ChartNew.JS](https://github.com/FVANCOP/ChartNew.js)
 * [html-template](https://github.com/moneymanagerex/html-template)
 

@@ -49,8 +49,13 @@ public:
     static wxDate PURCHASEDATE(const Data* stock);
     static wxDate PURCHASEDATE(const Data& stock);
 
-    static double value(const Data* r);
-    static double value(const Data& r);
+    /** Original value of Stocks */
+    static double InvestmentValue(const Data* r);
+    /** Original value of Stocks */
+    static double InvestmentValue(const Data& r);
+
+    static double CurrentValue(const Data* r);
+    static double CurrentValue(const Data& r);
 
 public:
     /**
