@@ -70,7 +70,6 @@
 #include "import_export/univcsvdialog.h"
 
 #include "model/allmodel.h"
-#include "model/Model_CreditCard.h"
 
 #include "search/Search.h"
 

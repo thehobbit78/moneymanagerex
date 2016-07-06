@@ -30,7 +30,6 @@
 #include "validators.h"
 
 #include "model/allmodel.h"
-#include "model/Model_CreditCard.h"
 
 #include <wx/valnum.h>
 

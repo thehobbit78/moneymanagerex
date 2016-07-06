@@ -31,6 +31,7 @@
 #include "Model_CurrencyHistory.h"
 #include "Model_CustomField.h"
 #include "Model_CustomFieldData.h"
+#include "Model_CreditCard.h"
 #include "Model_Infotable.h"
 #include "Model_Payee.h"
 #include "Model_Report.h"

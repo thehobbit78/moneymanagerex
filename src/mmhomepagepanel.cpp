@@ -32,7 +32,6 @@ Copyright (C) 2014 Nikolay
 #include "util.h"
 
 #include "model/allmodel.h"
-#include "model/Model_CreditCard.h"
 
 #include "cajun/json/elements.h"
 #include "cajun/json/reader.h"
