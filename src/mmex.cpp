@@ -111,6 +111,24 @@ void mmGUIApp::HandleEvent(wxEvtHandler *handler, wxEventFunction func, wxEvent&
         wxLogError("%s", e.what());
     }
 }
+
+int mmGUIApp::FilterEvent(wxEvent &event)
+{
+    int ret = wxApp::FilterEvent(event);
+
+    if (event.GetEventType() == wxEVT_SHOW)
+    {
+        wxWindow *win = (wxWindow*)event.GetEventObject();
+
+        if (win && win->IsTopLevel() && win != this->m_frame) // wxDialog & wxFrame http://docs.wxwidgets.org/trunk/classwx_top_level_window.html
+        {
+            Model_Usage::instance().pageview(win);
+        }
+    }
+
+    return ret;
+}
+
 //----------------------------------------------------------------------------
 
 void mmGUIApp::OnFatalException()
@@ -188,6 +206,16 @@ bool OnInitImpl(mmGUIApp* app)
 //----------------------------------------------------------------------------
 bool mmGUIApp::OnInit()
 {
+    m_checker = new wxSingleInstanceChecker;
+    if (m_checker->IsAnotherRunning())
+    {
+        wxMessageBox(_(
+            "MMEX is already running...\n\n"
+            "Multiple instances are no longer supported."), _("MMEX Instance Check"));
+        delete m_checker;
+        return false;
+    }
+
     bool ok = false;
 
     try
@@ -213,8 +241,6 @@ int mmGUIApp::OnExit()
     usage->USAGEDATE = wxDate::Today().FormatISODate();
     usage->JSONCONTENT = Model_Usage::instance().to_string();
     Model_Usage::instance().save(usage);
-    if (Model_Setting::instance().GetBoolSetting(INIDB_SEND_USAGE_STATS, true))
-        Model_Usage::send();
 
     if (m_setting_db) delete m_setting_db;
 
@@ -223,5 +249,6 @@ int mmGUIApp::OnExit()
     //Delete mmex temp folder for current user
     wxFileName::Rmdir(mmex::getTempFolder(), wxPATH_RMDIR_RECURSIVE);
 
+    delete m_checker;
     return 0;
 }

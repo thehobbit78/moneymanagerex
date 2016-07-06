@@ -23,9 +23,7 @@
 #include "constants.h"
 #include "htmlbuilder.h"
 #include "util.h"
-#include "model/Model_Attachment.h"
-#include "model/Model_Category.h"
-#include "model/Model_Payee.h"
+#include "model/allmodel.h"
 #include <algorithm>
 #include <vector>
 
@@ -98,7 +96,7 @@ wxString mmReportTransactions::getHTMLText()
         hb.addTableCell(transaction.CATEGNAME);
         if (Model_Checking::foreignTransactionAsTransfer(transaction))
         {
-            hb.addTableCell(wxGetTranslation(transaction.TRANSCODE) + " *T");
+            hb.addTableCell("< " + wxGetTranslation(transaction.TRANSCODE));
         }
         else
         {

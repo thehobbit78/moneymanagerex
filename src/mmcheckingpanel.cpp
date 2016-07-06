@@ -30,16 +30,7 @@
 #include "transdialog.h"
 #include "validators.h"
 #include "attachmentdialog.h"
-#include "model/Model_Infotable.h"
-#include "model/Model_Setting.h"
-#include "model/Model_Checking.h"
-#include "model/Model_Splittransaction.h"
-#include "model/Model_Account.h"
-#include "model/Model_Payee.h"
-#include "model/Model_Category.h"
-#include "model/Model_Attachment.h"
-#include "model/Model_Translink.h"
-#include "model/Model_Usage.h"
+#include "model/allmodel.h"
 #include "sharetransactiondialog.h"
 #include "assetdialog.h"
 #include "billsdepositsdialog.h"
@@ -146,7 +137,7 @@ bool mmCheckingPanel::Create(
     GetSizer()->SetSizeHints(this);
     this->windowsFreezeThaw();
 
-    Model_Usage::instance().pageview(name, name);
+    Model_Usage::instance().pageview(this);
 
     return true;
 }
@@ -664,6 +655,14 @@ void mmCheckingPanel::initFilterSettings()
         date_range = new mmLast12Months;
     else if (currentView_ == MENU_VIEW_CURRENTYEAR)
         date_range = new mmCurrentYear;
+    else if (currentView_ == MENU_VIEW_CURRENTFINANCIALYEAR)
+        date_range = new mmCurrentFinancialYear(wxAtoi(Option::instance().FinancialYearStartDay())
+        , wxAtoi(Option::instance().FinancialYearStartMonth()));
+    else if (currentView_ == MENU_VIEW_LASTYEAR)
+        date_range = new mmLastYear;
+    else if (currentView_ == MENU_VIEW_LASTFINANCIALYEAR)
+        date_range = new mmLastFinancialYear(wxAtoi(Option::instance().FinancialYearStartDay())
+        , wxAtoi(Option::instance().FinancialYearStartMonth()));
     else
         wxASSERT(false);
 
@@ -781,9 +780,9 @@ const wxString mmCheckingPanel::getItem(long item, long column)
     case TransactionListCtrl::COL_CATEGORY:
         return tran.CATEGNAME;
     case TransactionListCtrl::COL_PAYEE_STR:
-        return tran.PAYEENAME;
+        return tran.is_foreign_transfer() ? "< " + tran.PAYEENAME : tran.PAYEENAME;
     case TransactionListCtrl::COL_STATUS:
-        return tran.STATUS;
+        return tran.is_foreign() ? "< " + tran.STATUS : tran.STATUS;
     case TransactionListCtrl::COL_WITHDRAWAL:
         return tran.AMOUNT <= 0 ? Model_Currency::toString(std::fabs(tran.AMOUNT), this->m_currency) : "";
     case TransactionListCtrl::COL_DEPOSIT:
@@ -1124,7 +1123,7 @@ void TransactionListCtrl::OnMouseRightClick(wxMouseEvent& event)
     menu.Append(MENU_SUBMENU_MARK_ALL, _("Mark all being viewed"), subGlobalOpMenu);
 
     // Disable menu items not ment for foreign transactions
-    if (Model_Checking::foreignTransaction(m_cp->m_trans.at(m_selectedIndex)))
+    if (is_foreign)
     {
         menu.Enable(MENU_ON_COPY_TRANSACTION, false);
         menu.Enable(MENU_ON_PASTE_TRANSACTION, false);
@@ -1281,6 +1280,8 @@ int TransactionListCtrl::OnGetItemColumnImage(long item, long column) const
     {
         res = ICON_NONE;
         wxString status = m_cp->getItem(item, COL_STATUS);
+        if (status.length() > 1)
+            status = status.Mid(2, 1);
         if ( status == "F")
             res = ICON_FOLLOWUP;
         else if (status == "R")

@@ -25,13 +25,6 @@
 #include "model/Model_Setting.h"
 #include "model/Model_Account.h"
 
-//const std::vector<std::pair<Option::USAGE_TYPE, wxString> > Option::USAGE_CHOICE =
-//{
-//    std::make_pair(Option::NONE, wxString(wxTRANSLATE("None"))),
-//    std::make_pair(Option::LASTUSED, wxString(wxTRANSLATE("Last Used"))),
-//    std::make_pair(Option::UNUSED, wxString(wxTRANSLATE("Unused")))
-//};
-
 //----------------------------------------------------------------------------
 Option::Option()
 :   m_dateFormat(mmex::DEFDATEFORMAT)
@@ -45,7 +38,9 @@ Option::Option()
     , m_transPayeeSelection(Option::NONE)
     , m_transCategorySelection(Option::NONE)
     , m_transStatusReconciled(Option::NONE)
+    , m_usageStatistics(true)
     , m_transDateDefault(0)
+    , m_sharePrecision(4)
     , m_html_font_size(100)
     , m_ico_size(16)
 {}
@@ -66,6 +61,7 @@ void Option::LoadOptions(bool include_infotable)
         m_financialYearStartDayString = Model_Infotable::instance().GetStringInfo("FINANCIAL_YEAR_START_DAY", "1");
         m_financialYearStartMonthString = Model_Infotable::instance().GetStringInfo("FINANCIAL_YEAR_START_MONTH", "7");
         m_baseCurrency = Model_Infotable::instance().GetIntInfo("BASECURRENCYID", -1);
+        m_sharePrecision = Model_Infotable::instance().GetIntInfo("SHARE_PRECISION", 4);
     }
 
     m_language = Model_Setting::instance().GetStringSetting(LANGUAGE_PARAMETER, "english");
@@ -84,6 +80,7 @@ void Option::LoadOptions(bool include_infotable)
     m_transCategorySelection = Model_Setting::instance().GetIntSetting("TRANSACTION_CATEGORY_NONE", Option::LASTUSED);
     m_transStatusReconciled = Model_Setting::instance().GetIntSetting("TRANSACTION_STATUS_RECONCILED", Option::NONE);
     m_transDateDefault = Model_Setting::instance().GetIntSetting("TRANSACTION_DATE_DEFAULT", 0);
+    m_usageStatistics = Model_Setting::instance().GetBoolSetting(INIDB_SEND_USAGE_STATS, true);
 
     m_html_font_size = Model_Setting::instance().GetIntSetting("HTMLSCALE", 100);
     m_ico_size = 16;
@@ -282,6 +279,28 @@ void Option::TransDateDefault(int value)
 int Option::TransDateDefault()
 {
     return m_transDateDefault;
+}
+
+void Option::SharePrecision(int value)
+{
+    Model_Infotable::instance().Set("SHARE_PRECISION", value);
+    m_sharePrecision = value;
+}
+
+int Option::SharePrecision()
+{
+    return m_sharePrecision;
+}
+
+void Option::SendUsageStatistics(bool value)
+{
+    m_usageStatistics = value;
+    Model_Setting::instance().Set(INIDB_SEND_USAGE_STATS, value);
+}
+
+bool Option::SendUsageStatistics()
+{
+    return m_usageStatistics;
 }
 
 void Option::HtmlFontSize(int value)

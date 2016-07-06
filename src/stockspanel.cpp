@@ -26,13 +26,7 @@
 #include "sharetransactiondialog.h"
 #include "util.h"
 
-#include "model/Model_Attachment.h"
-#include "model/Model_Infotable.h"
-#include "model/Model_Setting.h"
-#include "model/Model_StockHistory.h"
-#include "model/Model_Translink.h"
-#include "model/Model_Shareinfo.h"
-#include "model/Model_Usage.h"
+#include "model/allmodel.h"
 
 static const wxString STOCKTIPS[] = { 
     wxTRANSLATE("Using MMEX it is possible to track stocks/mutual funds investments."),
@@ -414,9 +408,9 @@ void mmStocksPanel::ViewStockTransactions(int selectedIndex)
             wxString sd = mmGetDateForDisplay(Model_Checking::TRANSDATE(stock_trans));
             wxString sl = share_entry->SHARELOT;
       
-            int precision = share_entry->SHARENUMBER == floor(share_entry->SHARENUMBER) ? 0 : 4;
+            int precision = share_entry->SHARENUMBER == floor(share_entry->SHARENUMBER) ? 0 : Option::instance().SharePrecision();
             wxString sn = wxString::FromDouble(share_entry->SHARENUMBER, precision);
-            wxString su = wxString::FromDouble(share_entry->SHAREPRICE, 4);
+            wxString su = wxString::FromDouble(share_entry->SHAREPRICE, Option::instance().SharePrecision());
             wxString sc = wxString::FromDouble(share_entry->SHARECOMMISSION, 2);
             msg << wxString::Format("%s     %s          %s               %s          %s\n", sd, sl, sn, su, sc);
         }
@@ -519,7 +513,7 @@ bool mmStocksPanel::Create(wxWindow *parent
     GetSizer()->SetSizeHints(this);
 
     this->windowsFreezeThaw();
-    Model_Usage::instance().pageview(name, name);
+    Model_Usage::instance().pageview(this);
     return TRUE;
 }
 

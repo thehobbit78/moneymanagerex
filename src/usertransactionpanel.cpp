@@ -28,19 +28,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "categdialog.h"
 #include "attachmentdialog.h"
 
-#include "model/Model_Currency.h"
-#include "model/Model_Payee.h"
-#include "model/Model_Category.h"
-#include "model/Model_Checking.h"
-#include "model/Model_Attachment.h"
-#include "model/Model_Usage.h"
+#include "model/allmodel.h"
 
 /*******************************************************/
 wxBEGIN_EVENT_TABLE(UserTransactionPanel, wxPanel)
     EVT_SPIN_UP(ID_TRANS_DATE_CONTROLLER, UserTransactionPanel::OnDateSelectorForward)
     EVT_SPIN_DOWN(ID_TRANS_DATE_CONTROLLER, UserTransactionPanel::OnDateSelectorBackward)
     EVT_BUTTON(ID_TRANS_ACCOUNT_BUTTON, UserTransactionPanel::OnTransAccountButton)
-    EVT_BUTTON(ID_TRANS_CURRENCY_BUTTON, UserTransactionPanel::OnTransCurrencyButton)
     EVT_BUTTON(ID_TRANS_PAYEE_BUTTON, UserTransactionPanel::OnTransPayeeButton)
     EVT_BUTTON(ID_TRANS_CATEGORY_BUTTON, UserTransactionPanel::OnTransCategoryButton)
     EVT_MENU(wxID_ANY, UserTransactionPanel::onSelectedNote)
@@ -68,7 +62,7 @@ UserTransactionPanel::UserTransactionPanel(wxWindow *parent
     wxPanel::Create(parent, win_id, pos, size, style, name);
     Create();
     DataToControls();
-    Model_Usage::instance().pageview(name, name);
+    Model_Usage::instance().pageview(this);
 }
 
 UserTransactionPanel::~UserTransactionPanel()
@@ -158,13 +152,11 @@ void UserTransactionPanel::Create()
     }
     m_trans_currency = new wxButton(this, ID_TRANS_CURRENCY_BUTTON, currency->CURRENCY_SYMBOL
         , wxDefaultPosition, std_half_size);
-    m_trans_currency->SetToolTip(_("Set the currency to be used for this transaction."));
+    m_trans_currency->SetToolTip(_("Currency used for this transaction."));
 
     wxBoxSizer* entered_amount_sizer = new wxBoxSizer(wxHORIZONTAL);
     entered_amount_sizer->Add(m_entered_amount, g_flagsH);
     entered_amount_sizer->Add(m_trans_currency, g_flagsH);
-    //TODO m_trans_currency Show/ Hide
-    m_trans_currency->Hide();
 
     transPanelSizer->Add(entered_amount_text, g_flagsH);
     transPanelSizer->Add(entered_amount_sizer);
@@ -260,6 +252,12 @@ void UserTransactionPanel::DataToControls()
 
     m_entered_number->SetValue(m_checking_entry->TRANSACTIONNUMBER);
     m_entered_notes->SetValue(m_checking_entry->NOTES);
+
+    if (m_account_id > 0)
+    {
+        Model_Currency::Data* currency = Model_Account::currency(Model_Account::instance().get(m_account_id));
+        m_trans_currency->SetLabelText(currency->CURRENCY_SYMBOL);
+    }
 }
 
 void UserTransactionPanel::SetLastPayeeAndCategory(const int account_id)
@@ -295,17 +293,6 @@ void UserTransactionPanel::OnTransAccountButton(wxCommandEvent& WXUNUSED(event))
     if (scd.ShowModal() == wxID_OK)
     {
         SetTransactionAccount(scd.GetStringSelection());
-    }
-}
-
-void UserTransactionPanel::OnTransCurrencyButton(wxCommandEvent& WXUNUSED(event))
-{
-    int currency_id = Option::instance().BaseCurrency();
-
-    if (mmMainCurrencyDialog::Execute(this, currency_id) && currency_id != -1)
-    {
-        Model_Currency::Data* currency = Model_Currency::instance().get(currency_id);
-        m_trans_currency->SetLabelText(currency->CURRENCY_SYMBOL);
     }
 }
 
@@ -493,10 +480,6 @@ int UserTransactionPanel::SaveChecking()
     double initial_amount = 0;
     m_entered_amount->checkValue(initial_amount);
 
-    Model_Account::Data* base_account = Model_Account::instance().get(m_account_id);
-    wxString currency_symbol = Model_Currency::instance().get(base_account->CURRENCYID)->CURRENCY_SYMBOL;
-    Model_Currency::Data* currency = Model_Currency::instance().GetCurrencyRecord(currency_symbol);
-
     if (!m_checking_entry)
     {
         m_checking_entry = Model_Checking::instance().create();
@@ -507,7 +490,7 @@ int UserTransactionPanel::SaveChecking()
 
     m_checking_entry->PAYEEID = m_payee_id;
     m_checking_entry->TRANSCODE = Model_Checking::instance().all_type()[TransactionType()];
-    m_checking_entry->TRANSAMOUNT = initial_amount * currency->BASECONVRATE;
+    m_checking_entry->TRANSAMOUNT = initial_amount;
     m_checking_entry->STATUS = Model_Checking::all_status()[TransactionType()].Mid(0, 1);
     m_checking_entry->TRANSACTIONNUMBER = m_entered_number->GetValue();
     m_checking_entry->NOTES = m_entered_notes->GetValue();

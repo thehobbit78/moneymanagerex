@@ -112,8 +112,8 @@ static const wxString COLORS [] = {
 mmHTMLBuilder::mmHTMLBuilder()
 {
     today_.date = wxDateTime::Today();
-    today_.date_str = today_.date.FormatDate();
-    today_.todays_date = wxString::Format(_("Today's Date: %s"), today_.date_str);
+    today_.todays_date = wxString::Format(_("Today's Date: %s")
+		, mmGetNiceDateSimpleString(today_.date));
 }
 
 void mmHTMLBuilder::init()
@@ -218,8 +218,8 @@ void mmHTMLBuilder::addCurrencyCell(double amount, const Model_Currency::Data* c
 {
     if (precision == -1)
         precision = Model_Currency::precision(currency);
-    const wxString& s = Model_Currency::toCurrency(amount, currency, precision);
-    const wxString& f = wxString::Format(" class='money' sorttable_customkey = '%f' nowrap", amount);
+    const wxString s = Model_Currency::toCurrency(amount, currency, precision);
+    const wxString f = wxString::Format(" class='money' sorttable_customkey = '%f' nowrap", amount);
     html_ += wxString::Format(tags::TABLE_CELL, f);
     html_ += s;
     this->endTableCell();
@@ -300,16 +300,15 @@ void mmHTMLBuilder::addTableCellLink(const wxString& href
     addTableCell(wxString::Format(tags::TABLE_CELL_LINK, href, value ));
 }
 
-void mmHTMLBuilder::DisplayDateHeading(const wxDateTime& startYear, const wxDateTime& endYear, bool withDateRange)
+void mmHTMLBuilder::DisplayDateHeading(const wxDateTime& startDate, const wxDateTime& endDate, bool withDateRange)
 {
 
-    wxString todaysDate = "";
+    wxString todaysDate = today_.todays_date + tags::BR + tags::BR;
     if (withDateRange)
     {
-        todaysDate << today_.todays_date << tags::BR << tags::BR
-        << wxString::Format(_("From %s till %s")
-            , wxString(mmGetNiceDateSimpleString(startYear)).Prepend("<b>").Append("</b> ")
-            , wxString(mmGetNiceDateSimpleString(endYear)).Prepend("<b>").Append("</b> "));
+        todaysDate << wxString::Format(_("From %s till %s")
+            , wxString(mmGetNiceDateSimpleString(startDate)).Prepend("<b>").Append("</b> ")
+            , wxString(mmGetNiceDateSimpleString(endDate)).Prepend("<b>").Append("</b> "));
     }
     else
     {

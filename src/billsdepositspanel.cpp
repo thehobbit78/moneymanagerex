@@ -22,12 +22,7 @@
 #include "constants.h"
 #include "images_list.h"
 
-#include "model/Model_Account.h"
-#include "model/Model_Attachment.h"
-#include "model/Model_Category.h"
-#include "model/Model_Payee.h"
-#include "model/Model_Setting.h"
-#include "model/Model_Usage.h"
+#include "model/allmodel.h"
 
 enum
 {
@@ -193,7 +188,7 @@ bool mmBillsDepositsPanel::Create(wxWindow *parent
     initVirtualListControl();
 
     this->windowsFreezeThaw();
-    Model_Usage::instance().pageview(name, name);
+    Model_Usage::instance().pageview(this);
 
     return TRUE;
 }

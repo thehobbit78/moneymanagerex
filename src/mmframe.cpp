@@ -63,42 +63,13 @@
 #include "wizard_newaccount.h"
 #include "wizard_update.h"
 
-#include "reports/budgetcategorysummary.h"
-#include "reports/budgetingperf.h"
-#include "reports/cashflow.h"
-#include "reports/categexp.h"
-#include "reports/categovertimeperf.h"
-#include "reports/incexpenses.h"
-#include "reports/htmlbuilder.h"
-#include "reports/payee.h"
-#include "reports/transactions.h"
+#include "reports/allreport.h"
 
 #include "import_export/qif_export.h"
 #include "import_export/qif_import_gui.h"
 #include "import_export/univcsvdialog.h"
 
-#include "model/Model_Account.h"
-#include "model/Model_Asset.h"
-#include "model/Model_Attachment.h"
-#include "model/Model_Billsdeposits.h"
-#include "model/Model_Budget.h"
-#include "model/Model_Budgetyear.h"
-#include "model/Model_Category.h"
-#include "model/Model_Checking.h"
-#include "model/Model_CustomField.h"
-#include "model/Model_CustomFieldData.h"
-#include "model/Model_CurrencyHistory.h"
-#include "model/Model_Infotable.h"
-#include "model/Model_Payee.h"
-#include "model/Model_Report.h"
-#include "model/Model_Setting.h"
-#include "model/Model_Splittransaction.h"
-#include "model/Model_Stock.h"
-#include "model/Model_StockHistory.h"
-#include "model/Model_Subcategory.h"
-#include "model/Model_Translink.h"
-#include "model/Model_Shareinfo.h"
-#include "model/Model_Usage.h"
+#include "model/allmodel.h"
 #include "model/Model_CreditCard.h"
 
 #include "search/Search.h"
@@ -297,7 +268,7 @@ mmGUIFrame::mmGUIFrame(mmGUIApp* app, const wxString& title
     if (Model_Setting::instance().GetStringSetting(INIDB_SEND_USAGE_STATS, "") == "")
     {
         mmAboutDialog(this, 5).ShowModal();
-        Model_Setting::instance().Set(INIDB_SEND_USAGE_STATS, "TRUE");
+        Option::instance().SendUsageStatistics(true);
     }
 
     //Check for new version at startup
@@ -2231,6 +2202,28 @@ void mmGUIFrame::OnNewAccount(wxCommandEvent& /*event*/)
         Model_Account::Data* account = Model_Account::instance().get(wizard->acctID_);
         mmNewAcctDialog dlg(account, this);
         dlg.ShowModal();
+        if (account->ACCOUNTTYPE == Model_Account::all_type()[Model_Account::ASSET])
+        {
+            wxMessageBox(_(
+                "Asset Accounts hold Asset transactions\n\n"
+                "Asset transactions are created within the Assets View\n"
+                "after the selection of the Asset within that view.\n\n"
+                "Asset Accounts can also hold normal transactions to regular accounts."
+                ), _("Asset Account Creation"));
+        }
+
+        if (account->ACCOUNTTYPE == Model_Account::all_type()[Model_Account::SHARES])
+        {
+            wxMessageBox(_(
+                "Share Accounts hold Share transactions\n\n"
+                "Share transactions are created within the Stock Portfolio View\n"
+                "after the selection of the Company Stock within the associated view.\n\n"
+                "These accounts only become visible after associating a Stock to the Share Account\n"
+                "Or by using the Menu View --> 'Display Share Accounts'\n"
+                "Share Accounts can also hold normal transactions to regular account."
+                ), _("Share Account Creation"));
+        }
+
         updateNavTreeControl();
     }
 
