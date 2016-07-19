@@ -615,7 +615,7 @@ void mmHomePagePanel::getData()
 }
 const wxString mmHomePagePanel::getToggles()
 {
-    const wxString json = Model_Infotable::instance().GetStringInfo("NAV_TREE_STATUS", "{}");
+    const wxString json = Model_Infotable::instance().GetStringInfo("HOME_PAGE_STATUS", "{}");
     return json;
 }
 
@@ -861,7 +861,7 @@ void mmHomePagePanel::OnLinkClicked(wxWebViewEvent& event)
         wxLogDebug("%s", name);
 
         //Read data from ini DB as JSON then convert it to json::Object
-        wxString str = Model_Infotable::instance().GetStringInfo("NAV_TREE_STATUS", "");
+        wxString str = Model_Infotable::instance().GetStringInfo("HOME_PAGE_STATUS", "");
         if (!(str.StartsWith("{") && str.EndsWith("}"))) str = "{}";
         std::wstringstream ss;
         ss << str.ToStdWstring();
@@ -901,6 +901,6 @@ void mmHomePagePanel::OnLinkClicked(wxWebViewEvent& event)
         json::Writer::Write(o, wss);
         wxLogDebug("%s", wss.str());
         wxLogDebug("==========================================");
-        Model_Infotable::instance().Set("NAV_TREE_STATUS", wss.str());
+        Model_Infotable::instance().Set("HOME_PAGE_STATUS", wss.str());
     }
 }
