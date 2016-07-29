@@ -28,15 +28,64 @@
 #include "mongoose/mongoose.h"
 #include "singleton.h"
 #include "model/Model_Setting.h"
+#include "model/Model_Report.h"
+#include "model/Model_Setting.h"
+#include "model/Model_Infotable.h"
 
+#include "cajun/json/elements.h"
+#include "cajun/json/reader.h"
+#include "cajun/json/writer.h"
 
 static struct mg_serve_http_opts s_http_server_opts;
 
-static void ev_handler(struct mg_connection *nc, int ev, void *p) 
+static void handle_sql(struct mg_connection* nc, struct http_message* hm)
 {
-    if (ev == MG_EV_HTTP_REQUEST)
+    char query[0xffff];
+    mg_get_http_var(&hm->query_string, "query", query, sizeof(query));
+    std::cout<<query<<std::endl;
+
+    json::Object result;
+    result[L"query"] = json::String(wxString(query).ToStdWstring());
+    bool ret = Model_Report::instance().get_objects_from_sql(wxString(query), result); 
+
+    for (const auto & r : Model_Setting::instance().all())
     {
-        mg_serve_http(nc, (struct http_message *) p, s_http_server_opts);
+        result[r.SETTINGNAME.ToStdWstring()] = json::String(r.SETTINGVALUE.ToStdWstring());
+    }
+
+    for (const auto & r : Model_Infotable::instance().all())
+    {
+        result[r.INFONAME.ToStdWstring()] = json::String(r.INFOVALUE.ToStdWstring());
+    }
+     
+    std::wstringstream ss;
+    json::Writer::Write(result, ss);
+    std::wstring str = ss.str();
+    std::cout<<str<<std::endl;
+
+    mg_printf(nc, "HTTP/1.1 200 OK\r\n"
+                "Content-Type: application/json; charset=utf-8\r\n"
+                "Content-Length: %lu\r\n\r\n%ls", str.length(), str.c_str());
+}
+
+static void ev_handler(struct mg_connection *nc, int ev, void *ev_data) 
+{
+    struct http_message *hm = (struct http_message *) ev_data;
+
+    switch (ev)
+    {
+        case MG_EV_HTTP_REQUEST:
+            if (mg_vcmp(&hm->uri, "/api/v1/sql") == 0)
+            {
+                handle_sql(nc, hm);
+            }
+            else
+            {
+                mg_serve_http(nc, hm, s_http_server_opts); /* Serve static content */
+            }
+            break;
+        default:
+            break;
     }
 }
 

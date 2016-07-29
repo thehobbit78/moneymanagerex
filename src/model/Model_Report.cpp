@@ -74,6 +74,65 @@ Model_Report& Model_Report::instance(wxSQLite3Database* db)
     return ins;
 }
 
+bool Model_Report::get_objects_from_sql(const wxString& query, json::Object& o)
+{
+    wxSQLite3Statement stmt;
+    try
+    {
+        stmt = this->db_->PrepareStatement(query);
+        if (!stmt.IsReadOnly())
+        {
+            o[L"msg"] = json::String(L"the sql is not readonly");
+            return false;
+        }
+    }
+    catch (const wxSQLite3Exception& e)
+    {
+        o[L"msg"] = json::String(e.GetMessage().ToStdWstring());
+        return false;
+    }
+
+    try
+    {
+        json::Array results;
+        wxSQLite3ResultSet q = stmt.ExecuteQuery();
+        int columns = q.GetColumnCount();
+        while (q.NextRow())
+        {
+            json::Object r;
+
+            for (int i = 0; i < columns; ++i)
+            {
+                wxString column_name = q.GetColumnName(i);
+
+                switch (q.GetColumnType(i))
+                {
+                    case WXSQLITE_INTEGER:
+                        r[column_name.ToStdWstring()] = json::Number(q.GetInt(i));
+                        break;
+                    case WXSQLITE_FLOAT:
+                        r[column_name.ToStdWstring()] = json::Number(q.GetDouble(i));
+                        break;
+                    default:
+                        r[column_name.ToStdWstring()] = json::String(q.GetString(i).ToStdWstring());
+                        break;
+                }
+            }
+
+            results.Insert(r);
+        }
+        q.Finalize();
+        o[L"results"] = results;
+    }
+    catch (const wxSQLite3Exception& e)
+    {
+        o[L"msg"] = json::String(e.GetMessage().ToStdWstring());
+        return false;
+    }
+
+    return true;
+}
+
 wxArrayString Model_Report::allGroupNames()
 {
     wxArrayString groups;
@@ -95,7 +154,6 @@ wxString Model_Report::get_html(const Data* r)
     r->to_template(report);
 
     loop_t contents;
-    json::Array jsoncontents;
 
     loop_t errors;
     row_t error;
@@ -185,22 +243,11 @@ wxString Model_Report::get_html(const Data* r)
             }
         }
         row_t row;
-        json::Object o;
         for (const auto& item : rec)
         {
             row(item.first) = item.second;
-
-            double v;
-            if ((colHeaders[item.first] == WXSQLITE_INTEGER || colHeaders[item.first] == WXSQLITE_FLOAT)
-                && wxString(item.second).ToDouble(&v))
-            {
-                o[wxString(item.first).ToStdWstring()] = json::Number(v);
-            }
-            else
-                o[wxString(item.first).ToStdWstring()] = json::String(wxString(item.second).ToStdWstring());
         }
         contents += row;
-        jsoncontents.Insert(o);
 
     }
     q.Finalize();
@@ -234,9 +281,6 @@ wxString Model_Report::get_html(const Data* r)
 
     report(L"CONTENTS") = contents;
     {
-        std::wstringstream ss;
-        json::Writer::Write(jsoncontents, ss);
-        report(L"JSONCONTENTS") = wxString(ss.str());
         auto p = mmex::getPathAttachment(mmAttachmentManage::InfotablePathSetting());
         //javascript does not handle backslashs
         p.Replace("\\", "\\\\");
