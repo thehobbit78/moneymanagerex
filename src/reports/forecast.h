@@ -17,20 +17,18 @@
  ********************************************************/
 
 #pragma once
-
-#include "budget.h"
-#include "budgetcategorysummary.h"
-#include "budgetingperf.h"
-#include "cashflow.h"
-#include "categexp.h"
-#include "categovertimeperf.h"
-#include "htmlbuilder.h"
-#include "incexpenses.h"
-#include "mmDateRange.h"
-#include "myusage.h"
-#include "payee.h"
 #include "reportbase.h"
-#include "summary.h"
-#include "summarystocks.h"
-#include "transactions.h"
-#include "forecast.h"
+
+class mmReportForecast: public mmPrintableBase 
+{
+public:
+    mmReportForecast();
+    virtual ~mmReportForecast();
+
+    virtual bool has_date_range();
+    virtual wxString getHTMLText();
+
+protected:
+    static const char * m_template;
+};
+
