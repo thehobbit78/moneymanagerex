@@ -1,7 +1,7 @@
 /*******************************************************
  Copyright (C) 2006 Madhan Kanagavel
  Copyright (C) 2011 Stefano Giorgio
- Copyright (C) 2011-2016 Nikolay
+ Copyright (C) 2011-2016 Nikolay Akimov
 
  This program is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -936,8 +936,7 @@ void mmTransDialog::OnCategs(wxCommandEvent& /*event*/)
     }
     else
     {
-        mmCategDialog dlg(this, true, false);
-        dlg.setTreeSelection(m_trx_data.CATEGID, m_trx_data.SUBCATEGID);
+        mmCategDialog dlg(this, m_trx_data.CATEGID, m_trx_data.SUBCATEGID, false);
         if (dlg.ShowModal() == wxID_OK)
         {
             m_trx_data.CATEGID = dlg.getCategId();

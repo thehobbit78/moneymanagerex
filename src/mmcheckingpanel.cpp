@@ -144,7 +144,6 @@ bool mmCheckingPanel::Create(
 
 void mmCheckingPanel::sortTable()
 {
-    std::sort(this->m_trans.begin(), this->m_trans.end());
     switch (m_listCtrlAccount->g_sortcol)
     {
     case TransactionListCtrl::COL_ID:
@@ -175,11 +174,16 @@ void mmCheckingPanel::sortTable()
         std::stable_sort(this->m_trans.begin(), this->m_trans.end(), SorterByNOTES());
         break;
     default:
-        std::stable_sort(this->m_trans.begin(), this->m_trans.end(), SorterByTRANSDATE());
+        if (m_listCtrlAccount->m_prevSortCol != m_listCtrlAccount->g_sortcol)
+        {
+            std::stable_sort(this->m_trans.begin(), this->m_trans.end(), SorterByTRANSDATE());
+            m_listCtrlAccount->m_prevSortCol = m_listCtrlAccount->getSortColumn();
+        }
         break;
     }
 
-    if (!m_listCtrlAccount->g_asc) std::reverse(this->m_trans.begin(), this->m_trans.end());
+    if (!m_listCtrlAccount->g_asc)
+        std::reverse(this->m_trans.begin(), this->m_trans.end());
 }
 
 void mmCheckingPanel::filterTable()
@@ -207,8 +211,11 @@ void mmCheckingPanel::filterTable()
         }
         else
         {
-            if (!Model_Checking::TRANSDATE(tran).IsBetween(m_quickFilterBeginDate, m_quickFilterEndDate))
-                continue;
+            if (m_currentView != MENU_VIEW_ALLTRANSACTIONS)
+            {
+                if (tran.TRANSDATE < m_begin_date) continue;
+                if (tran.TRANSDATE > m_end_date) continue;
+            }
         }
 
         Model_Checking::Full_Data full_tran(tran, splits);
@@ -641,53 +648,47 @@ void mmCheckingPanel::initViewTransactionsHeader()
 //----------------------------------------------------------------------------
 void mmCheckingPanel::initFilterSettings()
 {
-    mmDateRange* date_range = 0;
+    mmDateRange* date_range = new mmAllTime;
 
-    if (m_transFilterActive)
-        date_range = new mmAllTime;
-    else if (m_currentView == MENU_VIEW_ALLTRANSACTIONS)
-        date_range = new mmAllTime;
-    else if (m_currentView == MENU_VIEW_TODAY)
-        date_range = new mmToday;
-    else if (m_currentView == MENU_VIEW_CURRENTMONTH)
-        date_range = new mmCurrentMonth;
-    else if (m_currentView == MENU_VIEW_LAST30)
-        date_range = new mmLast30Days;
-    else if (m_currentView == MENU_VIEW_LAST90)
-        date_range = new mmLast90Days;
-    else if (m_currentView == MENU_VIEW_LASTMONTH)
-        date_range = new mmLastMonth;
-    else if (m_currentView == MENU_VIEW_LAST3MONTHS)
-        date_range = new mmLast3Months;
-    else if (m_currentView == MENU_VIEW_LAST12MONTHS)
-        date_range = new mmLast12Months;
-    else if (m_currentView == MENU_VIEW_CURRENTYEAR)
-        date_range = new mmCurrentYear;
-    else if (m_currentView == MENU_VIEW_CURRENTFINANCIALYEAR)
-        date_range = new mmCurrentFinancialYear(wxAtoi(Option::instance().FinancialYearStartDay())
-        , wxAtoi(Option::instance().FinancialYearStartMonth()));
-    else if (m_currentView == MENU_VIEW_LASTYEAR)
-        date_range = new mmLastYear;
-    else if (m_currentView == MENU_VIEW_LASTFINANCIALYEAR)
-        date_range = new mmLastFinancialYear(wxAtoi(Option::instance().FinancialYearStartDay())
-        , wxAtoi(Option::instance().FinancialYearStartMonth()));
-    else if (m_currentView == MENU_VIEW_STATEMENTDATE)
+    if (!m_transFilterActive)
     {
-        if (Model_Account::BoolOf(m_account->STATEMENTLOCKED))
+        if (m_currentView == MENU_VIEW_TODAY)
+            date_range = new mmToday;
+        else if (m_currentView == MENU_VIEW_CURRENTMONTH)
+            date_range = new mmCurrentMonth;
+        else if (m_currentView == MENU_VIEW_LAST30)
+            date_range = new mmLast30Days;
+        else if (m_currentView == MENU_VIEW_LAST90)
+            date_range = new mmLast90Days;
+        else if (m_currentView == MENU_VIEW_LASTMONTH)
+            date_range = new mmLastMonth;
+        else if (m_currentView == MENU_VIEW_LAST3MONTHS)
+            date_range = new mmLast3Months;
+        else if (m_currentView == MENU_VIEW_LAST12MONTHS)
+            date_range = new mmLast12Months;
+        else if (m_currentView == MENU_VIEW_CURRENTYEAR)
+            date_range = new mmCurrentYear;
+        else if (m_currentView == MENU_VIEW_CURRENTFINANCIALYEAR)
+            date_range = new mmCurrentFinancialYear(wxAtoi(Option::instance().FinancialYearStartDay())
+                , wxAtoi(Option::instance().FinancialYearStartMonth()));
+        else if (m_currentView == MENU_VIEW_LASTYEAR)
+            date_range = new mmLastYear;
+        else if (m_currentView == MENU_VIEW_LASTFINANCIALYEAR)
+            date_range = new mmLastFinancialYear(wxAtoi(Option::instance().FinancialYearStartDay())
+                , wxAtoi(Option::instance().FinancialYearStartMonth()));
+        else if (m_currentView == MENU_VIEW_STATEMENTDATE)
         {
-            wxDateTime today(wxDateTime::Today());
-            date_range = new mmSpecifiedRange(Model_Account::DateOf(m_account->STATEMENTDATE).Add(wxDateSpan::Day()), today);
+            if (Model_Account::BoolOf(m_account->STATEMENTLOCKED))
+            {
+                date_range = new mmSpecifiedRange(Model_Account::DateOf(m_account->STATEMENTDATE)
+                    .Add(wxDateSpan::Day()), date_range->today());
+            }
         }
     }
-    else
-        wxASSERT(false);
 
-    if (date_range)
-    {
-        m_quickFilterBeginDate = date_range->start_date();
-        m_quickFilterEndDate = date_range->end_date();
-        delete date_range;
-    }
+    m_begin_date = date_range->start_date().FormatISODate();
+    m_end_date = date_range->end_date().FormatISODate();
+    delete date_range;
 }
 
 void mmCheckingPanel::OnFilterResetToViewAll(wxMouseEvent& event) {
@@ -938,6 +939,7 @@ TransactionListCtrl::TransactionListCtrl(
     m_attr17(*wxYELLOW, mmColors::userDefColor7, wxNullFont),
     m_sortCol(COL_DEF_SORT),
     g_sortcol(COL_DEF_SORT),
+    m_prevSortCol(COL_DEF_SORT),
     g_asc(true),
     m_selectedID(-1),
     m_topItemIndex(-1)
@@ -1256,6 +1258,7 @@ void TransactionListCtrl::OnColClick(wxListEvent& event)
     if (g_sortcol == ColumnNr && event.GetId() != MENU_HEADER_SORT) m_asc = !m_asc; // toggle sort order
     g_asc = m_asc;
 
+    m_prevSortCol = m_sortCol;
     m_sortCol = toEColumn(ColumnNr);
     g_sortcol = m_sortCol;
 
