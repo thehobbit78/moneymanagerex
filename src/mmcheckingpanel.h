@@ -53,6 +53,7 @@ public:
         ICON_ASC,
     };
 
+public:
     enum EColumn
     {
         COL_IMGSTATUS = 0,
@@ -77,6 +78,7 @@ public:
         return res;
     }
 
+public:
     EColumn g_sortcol; // index of column to sort
     EColumn m_prevSortCol;
     bool g_asc; // asc\desc sorting
@@ -89,6 +91,7 @@ public:
 
     void setColumnImage(EColumn col, int image);
 
+public:
     void OnNewTransaction(wxCommandEvent& event);
     void OnNewTransferTransaction(wxCommandEvent& event);
     void OnDeleteTransaction(wxCommandEvent& event);
@@ -101,10 +104,11 @@ public:
     void OnViewSplitTransaction(wxCommandEvent& event);
     void OnOrganizeAttachments(wxCommandEvent& event);
     void OnCreateReoccurance(wxCommandEvent& event);
+    void refreshVisualList(int trans_id = -1, bool filter = true);
     long m_selectedIndex;
     long m_selectedForCopy; //The transaction ID if selected for copy
     long m_selectedID; //Selected transaction ID
-    void refreshVisualList(int trans_id = -1, bool filter = true);
+    wxString m_today;
 
 protected:
     /* Sort Columns */
@@ -163,6 +167,7 @@ private:
     DECLARE_NO_COPY_CLASS(TransactionListCtrl)
     wxDECLARE_EVENT_TABLE();
 
+private:
     mmCheckingPanel* m_cp;
 
     wxListItemAttr m_attr1;  // style1
@@ -182,10 +187,12 @@ private:
     virtual int OnGetItemColumnImage(long item, long column) const;
     virtual wxListItemAttr* OnGetItemAttr(long item) const;
 
+private:
     void OnMouseRightClick(wxMouseEvent& event);
     void OnListLeftClick(wxMouseEvent& event);
     void OnListItemSelected(wxListEvent& event);
     void OnListItemActivated(wxListEvent& event);
+    void OnListItemFocused(wxListEvent& event);
     void OnMarkTransaction(wxCommandEvent& event);
     void OnMarkAllTransactions(wxCommandEvent& event);
     void OnListKeyDown(wxListEvent& event);
@@ -200,7 +207,6 @@ private:
     where to display the list again after refresh */
     long m_topItemIndex;
     EColumn m_sortCol;
-
 };
 
 //----------------------------------------------------------------------------
@@ -292,7 +298,6 @@ private:
 
     int m_currentView;
     int m_AccountID;
-    int m_basecurrecyID;
     bool m_transFilterActive;
     wxString m_begin_date;
     wxString m_end_date;

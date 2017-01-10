@@ -59,6 +59,7 @@ wxEND_EVENT_TABLE()
 wxBEGIN_EVENT_TABLE(TransactionListCtrl, mmListCtrl)
     EVT_LIST_ITEM_SELECTED(wxID_ANY, TransactionListCtrl::OnListItemSelected)
     EVT_LIST_ITEM_ACTIVATED(wxID_ANY, TransactionListCtrl::OnListItemActivated)
+    EVT_LIST_ITEM_FOCUSED(wxID_ANY, TransactionListCtrl::OnListItemFocused)
     EVT_RIGHT_DOWN(TransactionListCtrl::OnMouseRightClick)
     EVT_LEFT_DOWN(TransactionListCtrl::OnListLeftClick)
     EVT_LIST_KEY_DOWN(wxID_ANY,  TransactionListCtrl::OnListKeyDown)
@@ -99,7 +100,6 @@ mmCheckingPanel::mmCheckingPanel(wxWindow *parent, mmGUIFrame *frame, int accoun
     , m_trans_filter_dlg(0)
     , m_frame(frame)
 {
-    m_basecurrecyID = Option::instance().BaseCurrency();
     long style = wxTAB_TRAVERSAL | wxNO_BORDER;
     Create(parent, mmID_CHECKING, wxDefaultPosition, wxDefaultSize, style);
 }
@@ -290,9 +290,21 @@ void mmCheckingPanel::markSelectedTransaction(int trans_id)
 
     if (!m_trans.empty() && m_listCtrlAccount->m_selectedIndex < 0)
     {
-        long i = static_cast<long>(m_trans.size()) - 1;
-        if (!m_listCtrlAccount->g_asc)
-            i =0;
+        long i = m_listCtrlAccount->g_asc ? static_cast<long>(m_trans.size()) - 1 : 0;
+
+        if (m_listCtrlAccount->g_sortcol == TransactionListCtrl::COL_DATE)
+        {
+            bool future = true;
+            while (future && i >= 0)
+            {
+                if (m_trans[i].TRANSDATE > m_listCtrlAccount->m_today && i > 0)
+                {
+                    i = m_listCtrlAccount->g_asc ? i - 1 : i + 1;
+                }
+                else
+                    future = false;
+            }
+        }
         m_listCtrlAccount->EnsureVisible(i);
         m_listCtrlAccount->m_selectedIndex = i;
         m_listCtrlAccount->m_selectedID = m_trans[i].TRANSID;
@@ -652,7 +664,7 @@ void mmCheckingPanel::initViewTransactionsHeader()
 //----------------------------------------------------------------------------
 void mmCheckingPanel::initFilterSettings()
 {
-    mmDateRange* date_range = new mmAllTime;
+    mmDateRange* date_range = NULL;
 
     if (!m_transFilterActive)
     {
@@ -685,10 +697,14 @@ void mmCheckingPanel::initFilterSettings()
             if (Model_Account::BoolOf(m_account->STATEMENTLOCKED))
             {
                 date_range = new mmSpecifiedRange(Model_Account::DateOf(m_account->STATEMENTDATE)
-                    .Add(wxDateSpan::Day()), date_range->today());
+                    .Add(wxDateSpan::Day()), wxDateTime::Today());
             }
         }
     }
+	if (date_range == NULL)
+	{
+		date_range = new mmAllTime;
+	}
 
     m_begin_date = date_range->start_date().FormatISODate();
     m_end_date = date_range->end_date().FormatISODate();
@@ -884,8 +900,6 @@ void mmCheckingPanel::SetTransactionFilterState(bool active)
 {
     m_bitmapMainFilter->Enable(!m_transFilterActive);
     m_stxtMainFilter->Enable(!m_transFilterActive);
-    //bitmapTransFilter_->Enable(active || transFilterActive_);
-    //statTextTransFilter_->Enable(active || transFilterActive_);
 }
 
 void mmCheckingPanel::SetSelectedTransaction(int transID)
@@ -989,6 +1003,7 @@ TransactionListCtrl::TransactionListCtrl(
     m_col_width = "CHECK_COL%d_WIDTH";
 
     m_default_sort_column = COL_DEF_SORT;
+    m_today = wxDateTime::Today().FormatISODate();
 
     SetSingleStyle(wxLC_SINGLE_SEL, false);
 }
@@ -1334,7 +1349,7 @@ wxListItemAttr* TransactionListCtrl::OnGetItemAttr(long item) const
     if (item < 0 || item >= (int)m_cp->m_trans.size()) return 0;
 
     const Model_Checking::Full_Data& tran = m_cp->m_trans[item];
-    bool in_the_future = tran.TRANSDATE > wxDateTime::Today().FormatISODate();
+    bool in_the_future = (tran.TRANSDATE > m_today);
 
     // apply alternating background pattern
     int user_colour_id = tran.FOLLOWUPID;
@@ -1351,11 +1366,12 @@ wxListItemAttr* TransactionListCtrl::OnGetItemAttr(long item) const
         else if (user_colour_id == 6) return (wxListItemAttr*)&m_attr16;
         else if (user_colour_id == 7) return (wxListItemAttr*)&m_attr17;
     }
-    else if (in_the_future && item % 2) return (wxListItemAttr*)&m_attr3;
-    else if (in_the_future)             return (wxListItemAttr*)&m_attr4;
-    else if (item % 2)                  return (wxListItemAttr*)&m_attr1;
+    if (in_the_future)
+    {
+        return (item % 2 ? (wxListItemAttr*)&m_attr3 : (wxListItemAttr*)&m_attr4);
+    }
 
-    return (wxListItemAttr*)&m_attr2;
+    return (item % 2 ? (wxListItemAttr*)&m_attr1 : (wxListItemAttr*)&m_attr2);
 }
 //----------------------------------------------------------------------------
 // If any of these keys are encountered, the search for the event handler
@@ -1709,6 +1725,7 @@ void TransactionListCtrl::OnSetUserColour(wxCommandEvent& event)
 
 void TransactionListCtrl::refreshVisualList(int trans_id, bool filter)
 {
+    m_today = wxDateTime::Today().FormatISODate();
     this->SetEvtHandlerEnabled(false);
     Hide();
 
@@ -1826,3 +1843,39 @@ void TransactionListCtrl::OnListItemActivated(wxListEvent& /*event*/)
     AddPendingEvent(evt);
 }
 
+void TransactionListCtrl::OnListItemFocused(wxListEvent& event)
+{
+    long count = this->GetSelectedItemCount();
+    if (count < 2) return;
+
+    long x = 0;
+    wxString maxDate, minDate;
+    double balance = 0;
+    for (const auto& i : m_cp->m_trans)
+    {
+        if (GetItemState(x, wxLIST_STATE_SELECTED) == wxLIST_STATE_SELECTED)
+        {
+            balance += Model_Checking::balance(i);
+            if (minDate > i.TRANSDATE || maxDate.empty()) minDate = i.TRANSDATE;
+            if (maxDate < i.TRANSDATE || maxDate.empty()) maxDate = i.TRANSDATE;
+        }
+        x++;
+    }
+
+    wxDateTime min_date, max_date;
+    min_date.ParseISODate(minDate);
+    max_date.ParseISODate(maxDate);
+
+    int days = wxTimeSpan(max_date.Subtract(min_date)).GetDays();
+
+    wxString msg;
+    Model_Account::Data *account = Model_Account::instance().get(m_cp->m_AccountID);
+    msg = wxString::Format(_("Transactions selected: %ld"), count);
+    msg += "\n";
+    msg += wxString::Format(_("Selected transactions balance: %s")
+        , Model_Account::toCurrency(balance, account));
+    msg += "\n";
+    msg += wxString::Format(_("Days between selected transactions: %d"), days);
+
+    m_cp->m_info_panel->SetLabelText(msg);
+}

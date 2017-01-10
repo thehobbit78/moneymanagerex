@@ -34,7 +34,7 @@ class mmQIFImportDialog : public wxDialog
 
 public:
     mmQIFImportDialog() {}
-    mmQIFImportDialog(wxWindow* parent);
+    mmQIFImportDialog(wxWindow* parent, int account_id);
 
     bool Create(wxWindow* parent, wxWindowID id
         , const wxString& caption
@@ -64,7 +64,7 @@ private:
     void getOrCreateCategories();
     void compliteTransaction(std::map <int, wxString> &trx, const wxString &accName);
     bool compliteTransaction(/*in*/ const std::map <int, wxString> &i
-        , /*out*/ Model_Checking::Data* trx);
+        , /*out*/ Model_Checking::Data* trx, wxString& msg);
     bool mergeTransferPair(Model_Checking::Cache& to, Model_Checking::Cache& from);
     void appendTransfers(Model_Checking::Cache &destination, Model_Checking::Cache &target);
     void joinSplit(Model_Checking::Cache &destination, std::vector <Model_Splittransaction::Cache> &target);
@@ -84,6 +84,7 @@ private:
     std::vector <Model_Splittransaction::Cache> m_splitDataSets;
     static const std::map <wxString, int> m_QIFaccountTypes;
 
+    int m_init_account_id;
     wxString m_accountNameStr;
     wxString m_dateFormatStr;
     bool m_userDefinedDateMask;
@@ -98,6 +99,7 @@ private:
     wxDataViewListCtrl* categoryListBox_;
     wxButton* button_search_;
     wxTextCtrl* file_name_ctrl_;
+    wxChoice* m_choiceEncoding;
     wxTextCtrl* log_field_;
     wxCheckBox* dateFromCheckBox_;
     wxCheckBox* dateToCheckBox_;

@@ -967,7 +967,7 @@ void mmGUIFrame::OnSelChanged(wxTreeEvent& event)
             else
             {
                 /* cannot find accountid */
-                wxASSERT(true);
+                wxASSERT(false);
             }
         }
     }
@@ -1735,7 +1735,7 @@ bool mmGUIFrame::createDataStore(const wxString& fileName, const wxString& pwd, 
         /* Do a backup before opening */
         if (Model_Setting::instance().GetBoolSetting("BACKUPDB", false))
         {
-            dbUpgrade::BackupDB(m_filename, dbUpgrade::BACKUPTYPE::START, Model_Setting::instance().GetIntSetting("MAX_BACKUP_FILES", 4));
+            dbUpgrade::BackupDB(fileName, dbUpgrade::BACKUPTYPE::START, Model_Setting::instance().GetIntSetting("MAX_BACKUP_FILES", 4));
         }
 
         m_db = mmDBWrapper::Open(fileName, password);
@@ -2112,8 +2112,7 @@ void mmGUIFrame::OnExportToQIF(wxCommandEvent& /*event*/)
 
 void mmGUIFrame::OnImportQIF(wxCommandEvent& /*event*/)
 {
-
-    mmQIFImportDialog dlg(this);
+    mmQIFImportDialog dlg(this, gotoAccountID_);
     dlg.ShowModal();
     int account_id = dlg.get_last_imported_acc();
     updateNavTreeControl();
