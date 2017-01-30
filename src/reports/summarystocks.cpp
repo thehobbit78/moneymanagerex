@@ -209,12 +209,16 @@ wxString mmReportChartStocks::getHTMLText()
         hb.DisplayDateHeading(m_date_range->start_date(), m_date_range->end_date(), true);
     hb.addHorizontalLine();
 
-    int count = 0, heldAt = -1;
+    int count = 0;
     bool pointDot = false, showGridLines = false;
+    wxString lastSym;
     wxTimeSpan dist;
     wxDate precDateDt = wxInvalidDateTime;
     for (const auto& stock : Model_Stock::instance().all(Model_Stock::COL_HELDAT))
     {
+        if (!lastSym.empty() && lastSym == stock.SYMBOL)
+            continue;
+
         int dataCount = 0, freq = 1;
         Model_StockHistory::Data_Set histData = Model_StockHistory::instance().find(Model_StockHistory::SYMBOL(stock.SYMBOL),
             Model_StockHistory::DATE(m_date_range->start_date(), GREATER_OR_EQUAL),
@@ -254,9 +258,9 @@ wxString mmReportChartStocks::getHTMLText()
             hb.addLineChart(aData, stock.STOCKNAME, count, 1000, 400, pointDot, showGridLines, true);
             hb.endDiv();
             hb.endDiv();
+            lastSym = stock.SYMBOL;
         }
 
-        heldAt = stock.HELDAT;
         count++;
     }
 
