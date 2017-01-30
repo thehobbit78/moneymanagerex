@@ -84,15 +84,22 @@ wxArrayString Model_Account::all_checking_account_names(bool skip_closed)
 
 wxArrayString Model_Account::all_status()
 {
-    wxArrayString status;
-    for (const auto& item : STATUS_CHOICES) status.Add(item.second);
+    static wxArrayString status;
+    if (status.empty())
+    {
+        for (const auto& item : STATUS_CHOICES) status.Add(item.second);
+    }
     return status;
 }
 
 wxArrayString Model_Account::all_type()
 {
-    wxArrayString type;
-    for (const auto& item : TYPE_CHOICES) type.Add(item.second);
+    static wxArrayString type;
+    if (type.empty())
+    {
+        for (const auto& item : TYPE_CHOICES) 
+            type.Add(item.second);
+    }
     return type;
 }
 
@@ -306,9 +313,14 @@ bool Model_Account::is_used(const Model_Currency::Data& c)
     return is_used(&c);
 }
 
-int Model_Account::checking_account_num()
+int Model_Account::money_accounts_num()
 {
-    return Model_Account::instance().find(ACCOUNTTYPE(all_type()[CHECKING])).size();
+    return
+        Model_Account::instance().find(ACCOUNTTYPE(all_type()[CASH])).size()
+        + Model_Account::instance().find(ACCOUNTTYPE(all_type()[CHECKING])).size()
+        + Model_Account::instance().find(ACCOUNTTYPE(all_type()[CREDIT_CARD])).size()
+        + Model_Account::instance().find(ACCOUNTTYPE(all_type()[LOAN])).size()
+        + Model_Account::instance().find(ACCOUNTTYPE(all_type()[TERM])).size();
 }
 
 bool Model_Account::Exist(const wxString& account_name)

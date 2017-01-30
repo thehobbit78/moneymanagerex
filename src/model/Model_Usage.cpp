@@ -120,7 +120,7 @@ void SendStatsThread::ev_handler(struct mg_connection *nc, int ev, void *ev_data
     }
 }
 
-void Model_Usage::pageview(const wxWindow* window)
+void Model_Usage::pageview(const wxWindow* window, int plt /* = 0 msec*/)
 {
     if (!window) return;
     if (window->GetName().IsEmpty()) return;
@@ -142,15 +142,10 @@ void Model_Usage::pageview(const wxWindow* window)
         current = current->GetParent();
     }
 
-    return pageview(wxURI(documentPath).BuildURI(), wxURI(documentTitle).BuildURI());
+    return pageview(wxURI(documentPath).BuildURI(), wxURI(documentTitle).BuildURI(), plt);
 }
 
-void Model_Usage::pageview(const wxString& documentPath, const wxString& documentTitle)
-{
-    return pageview(std::string(documentPath.c_str()), std::string(documentTitle.c_str()));
-}
-
-void Model_Usage::pageview(const std::string& documentPath, const std::string& documentTitle)
+void Model_Usage::pageview(const wxString& documentPath, const wxString& documentTitle, int plt /* = 0 msec*/)
 {
     if (!Option::instance().SendUsageStatistics())
     {
@@ -161,29 +156,30 @@ void Model_Usage::pageview(const std::string& documentPath, const std::string& d
 
     std::string url = GA_URL_ENDPOINT;
 
-    std::map<std::string, std::string> parameters = {
-        {"v", "1"},
-        {"t", "pageview"},
-        {"tid", "UA-51521761-6"},
-        {"cid", std::string(uuid().c_str())},
-        {"dp", documentPath},
-        {"dt", documentTitle},
-//        {"geoid", },
-        {"ul", std::string(Option::instance().Language())},
-        {"sr", std::string(wxString::Format("%ix%i", wxGetDisplaySize().GetX(), wxGetDisplaySize().GetY()).c_str())},
-        {"vp", ""},
-        {"sd", std::string(wxString::Format("%i-bits", wxDisplayDepth()))},
+    std::vector<std::pair<wxString, wxString>> parameters = {
+        { "v", "1" },
+        { "t", "pageview" },
+        { "tid", "UA-51521761-6" },
+        { "cid", uuid() },
+        { "dp", documentPath },
+        { "dt", documentTitle },
+        //        {"geoid", },
+        { "ul", Option::instance().Language() },
+        { "sr", wxString::Format("%ix%i", wxGetDisplaySize().GetX(), wxGetDisplaySize().GetY()) },
+        { "vp", "" },
+        { "sd", wxString::Format("%i-bits", wxDisplayDepth()) },
         // application
-        {"an", "MoneyManagerEx"},
-        {"av", std::string(mmex::version::string.c_str())}, // application version
-        // custom dimensions
-        {"cd1", std::string(wxPlatformInfo::Get().GetPortIdShortName().c_str())},
+        { "an", "MoneyManagerEx" },
+        { "av", mmex::version::string }, // application version
+                                         // custom dimensions
+        { "cd1", wxPlatformInfo::Get().GetPortIdShortName() },
+        { "plt", wxString::Format("%d", plt)}
     };
 
-    for (const auto & kv : parameters)
+    for (const auto& kv : parameters)
     {
         if (kv.second.empty()) continue;
-        url += kv.first + "=" + kv.second + "&";
+        url += wxString::Format("%s=%s&", kv.first, kv.second).ToStdString();
     }
 
     url.back() = ' '; // override the last &
@@ -213,7 +209,7 @@ wxThread::ExitCode SendStatsThread::Entry()
 
 	mg_mgr_init(&mgr, this);
 
-	std::string user_agent = "User-Agent: " + std::string(wxGetOsDescription().c_str()) + "\r\n";
+	std::string user_agent = "User-Agent: " + wxGetOsDescription().ToStdString() + "\r\n";
 	std::cout << user_agent << std::endl;
 	nc = mg_connect_http(&mgr, SendStatsThread::ev_handler, m_url.c_str(), user_agent.c_str(), NULL); // GET
 

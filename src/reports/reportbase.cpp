@@ -1,5 +1,5 @@
 /*******************************************************
- Copyright (C) 2013 James Higley
+ Copyright (C) 2013,2017 James Higley
 
  This program is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -21,6 +21,73 @@
 #include "mmex.h"
 #include "mmDateRange.h"
 #include "model/Model_Account.h"
+#include "mmSimpleDialogs.h"
+
+mmPrintableBase::mmPrintableBase(const wxString& title)
+    : m_title(title)
+    , m_date_range(nullptr)
+    , m_initial(true)
+    , m_date_selection(0)
+    , m_account_selection(0)
+    , accountArray_(nullptr)
+    , m_only_active(false)
+{
+}
+
+mmPrintableBase::~mmPrintableBase()
+{
+    if (accountArray_)
+        delete accountArray_;
+}
+
+void mmPrintableBase::accounts(int selection, wxString& name)
+{
+    if ((selection == 1) || (m_account_selection != selection))
+    {
+        m_account_selection = selection;
+        if (accountArray_)
+        {
+            delete accountArray_;
+            accountArray_ = nullptr;
+        }
+
+        switch (selection)
+        {
+        case 0: // All Accounts
+            break;
+        case 1: // Select Accounts
+            {
+                wxArrayString* accountSelections = new wxArrayString();
+                const Model_Account::Data_Set accounts = 
+                    (m_only_active ? Model_Account::instance().find(Model_Account::ACCOUNTTYPE(Model_Account::all_type()[Model_Account::INVESTMENT], NOT_EQUAL), Model_Account::STATUS(Model_Account::OPEN))
+                    : Model_Account::instance().find(Model_Account::ACCOUNTTYPE(Model_Account::all_type()[Model_Account::INVESTMENT], NOT_EQUAL)));
+
+                mmMultiChoiceDialog mcd(0, _("Choose Accounts"), m_title, accounts);
+
+                if (mcd.ShowModal() == wxID_OK)
+                {
+                    for (const auto &i : mcd.GetSelections())
+                        accountSelections->Add(accounts.at(i).ACCOUNTNAME);
+                }
+
+                accountArray_ = accountSelections;
+            }
+            break;
+        default: // All of Account type
+            {
+                wxArrayString* accountSelections = new wxArrayString();
+                auto accounts = Model_Account::instance().find(Model_Account::ACCOUNTTYPE(name));
+                for (const auto &i : accounts)
+                {
+                    if (m_only_active && (i.STATUS == Model_Account::all_status()[Model_Account::CLOSED]))
+                        continue;
+                    accountSelections->Add(i.ACCOUNTNAME);
+                }
+                accountArray_ = accountSelections;
+            }
+        }
+    }
+}
 
 wxString mmPrintableBase::title() const
 {
@@ -28,6 +95,15 @@ wxString mmPrintableBase::title() const
         return m_title; 
     else 
         return m_title + " - " + m_date_range->title();
+}
+
+wxString mmPrintableBase::file_name() const
+{
+    wxString file_name = title();
+    file_name.Replace(" - ", "-");
+    file_name.Replace(" ", "_");
+    file_name.Replace("/", "-");
+    return file_name;
 }
 
 mmGeneralReport::mmGeneralReport(const Model_Report::Data* report)
@@ -39,51 +115,6 @@ mmGeneralReport::mmGeneralReport(const Model_Report::Data* report)
 wxString mmGeneralReport::getHTMLText()
 {
     return Model_Report::instance().get_html(this->m_report);
-}
-
-mmPrintableBaseSpecificAccounts::mmPrintableBaseSpecificAccounts(const wxString& report_name, int sort_column)
-: mmPrintableBase(report_name)
-, accountArray_(0)
-{
-}
-
-const char * mmPrintableBase::m_template = "";
-
-mmPrintableBaseSpecificAccounts::~mmPrintableBaseSpecificAccounts()
-{
-    if (accountArray_)
-        delete accountArray_;
-}
-
-void mmPrintableBaseSpecificAccounts::getSpecificAccounts()
-{
-    wxArrayString* selections = new wxArrayString();
-    wxArrayString accounts;
-    for (const auto &account : Model_Account::instance().all(Model_Account::COL_ACCOUNTNAME))
-    {
-        if (Model_Account::type(account) == Model_Account::INVESTMENT) continue;
-        accounts.Add(account.ACCOUNTNAME);
-    }
-
-    wxMultiChoiceDialog mcd(0, _("Choose Accounts"), m_title, accounts);
-    wxButton* ok = (wxButton*) mcd.FindWindow(wxID_OK);
-    if (ok) ok->SetLabel(_("&OK "));
-    wxButton* ca = (wxButton*) mcd.FindWindow(wxID_CANCEL);
-    if (ca) ca->SetLabel(wxGetTranslation(g_CancelLabel));
-
-    if (mcd.ShowModal() == wxID_OK)
-    {
-        wxArrayInt arraySel = mcd.GetSelections();
-
-        for (size_t i = 0; i < arraySel.size(); ++i)
-        {
-            selections->Add(accounts.Item(arraySel[i]));
-        }
-    }
-
-    if (accountArray_)
-        delete accountArray_;
-    accountArray_ = selections;
 }
 
 mm_html_template::mm_html_template(const wxString& arg_template): html_template(arg_template.ToStdWstring())

@@ -512,6 +512,7 @@ bool mmHomePagePanel::Create(wxWindow *parent
 {
     SetExtraStyle(GetExtraStyle() | wxWS_EX_BLOCK_EVENTS);
     wxPanelBase::Create(parent, winid, pos, size, style, name);
+    wxDateTime start = wxDateTime::UNow();
 
     CreateControls();
     GetSizer()->Fit(this);
@@ -567,7 +568,10 @@ void mmHomePagePanel::getData()
     m_frames["HTMLSCALE"] = wxString::Format("%d", Option::instance().HtmlFontSize());
 
     vAccts_ = Model_Setting::instance().ViewAccounts();
-    date_range_->destroy();
+    
+    if (date_range_)
+        date_range_->destroy();
+ 
     if (Option::instance().IgnoreFutureTransactions())
         date_range_ = new mmCurrentMonthToDate;
     else
@@ -625,9 +629,8 @@ void mmHomePagePanel::fillData()
     {
         m_templateText.Replace(wxString::Format("<TMPL_VAR %s>", entry.first), entry.second);
     }
-    Model_Report::outputReportFile(m_templateText);
-    browser_->LoadURL(getURL(mmex::getReportIndex()));
-    wxLogDebug("Loading file:%s", mmex::getReportIndex());
+    Model_Report::outputReportFile(m_templateText, "index");
+    browser_->LoadURL(getURL(mmex::getReportFullName("index")));
 }
 
 void mmHomePagePanel::get_account_stats(std::map<int, std::pair<double, double> > &accountStats)

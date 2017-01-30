@@ -2,7 +2,7 @@
 Copyright (C) 2006 Madhan Kanagavel
 Copyright (C) 2012 Stefano Giorgio
 Copyright (C) 2013 Nikolay
-Copyright (C) 2014 James Higley
+Copyright (C) 2014, 2017 James Higley
 Copyright (C) 2014 Guan Lisheng (guanlisheng@gmail.com)
 
  This program is free software; you can redistribute it and/or modify
@@ -149,7 +149,7 @@ private:
     void saveSettings();
     void menuEnableItems(bool enable);
     void updateNavTreeControl();
-    void updateReportNavigation(wxTreeItemId& reports, wxTreeItemId& budgeting);
+    void updateReportNavigation(wxTreeItemId& reports, bool budget);
     void showTreePopupMenu(const wxTreeItemId& id, const wxPoint& pt);
     void showBeginAppDialog(bool fromScratch = false);
     void SetDataBaseParameters(const wxString& fileName);
@@ -227,6 +227,7 @@ private:
     void OnPopupDeleteAccount(wxCommandEvent& event);
     void OnPopupEditAccount(wxCommandEvent& event);
     void OnPopupReallocateAccount(wxCommandEvent& event);
+    void OnPopupAccountBaseBalance(wxCommandEvent& event);
 
     void OnViewAccountsTemporaryChange(wxCommandEvent& event);
 
@@ -243,6 +244,8 @@ private:
 
     void OnRecentFiles(wxCommandEvent& event);
     void OnClearRecentFiles(wxCommandEvent& /*event*/);
+
+    void OnHideShowReport(wxCommandEvent& event);
 
     /** Sets the database to the new database selected by the user */
     void SetDatabaseFile(const wxString& dbFileName, bool newDatabase = false);
@@ -313,6 +316,7 @@ private:
         MENU_TREEPOPUP_MOVE,
         MENU_TREEPOPUP_DELETE,
         MENU_TREEPOPUP_REALLOCATE,
+        MENU_TREEPOPUP_ACCOUNT_BASE_BALANCE,
 
         //
         MENU_TREEPOPUP_ACCOUNT_NEW,
@@ -331,6 +335,9 @@ private:
         MENU_TREEPOPUP_ACCOUNT_VIEWOPEN,
         MENU_TREEPOPUP_ACCOUNT_VIEWCLOSED,
         AUTO_REPEAT_TRANSACTIONS_TIMER_ID,
+
+        MENU_TREEPOPUP_HIDE_SHOW_REPORT,
+        MENU_TREEPOPUP_HIDE_SHOW_REPORT32 = MENU_TREEPOPUP_HIDE_SHOW_REPORT + 32, // Reserved space
     };
 };
 //----------------------------------------------------------------------------

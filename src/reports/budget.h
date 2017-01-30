@@ -1,5 +1,6 @@
 /*************************************************************************
  Copyright (C) 2012 Stefano Giorgio
+ Copyright (C) 2017 James Higley
 
  This program is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -54,6 +55,7 @@ public:
     /// sets the start and end dates for a budget month
     void SetBudgetMonth(wxString budgetYearStr, wxDateTime& startDate, wxDateTime& endDate);
 
+    virtual bool has_budget_dates();
     virtual wxString getHTMLText();
 };
 

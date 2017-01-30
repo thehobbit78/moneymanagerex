@@ -50,7 +50,8 @@ wxBEGIN_EVENT_TABLE(mmCheckingPanel, wxPanel)
     EVT_BUTTON(wxID_REMOVE,      mmCheckingPanel::OnDeleteTransaction)
     EVT_BUTTON(wxID_DUPLICATE,    mmCheckingPanel::OnDuplicateTransaction)
     EVT_BUTTON(wxID_FILE, mmCheckingPanel::OnOpenAttachment)
-    EVT_MENU_RANGE(wxID_HIGHEST + MENU_VIEW_ALLTRANSACTIONS, wxID_HIGHEST + MENU_VIEW_ALLTRANSACTIONS + menu_labels().size()
+    EVT_MENU_RANGE(wxID_HIGHEST + MENU_VIEW_ALLTRANSACTIONS
+        , wxID_HIGHEST + MENU_VIEW_ALLTRANSACTIONS + menu_labels().size()
         , mmCheckingPanel::OnViewPopupSelected)
     EVT_SEARCHCTRL_SEARCH_BTN(wxID_FIND, mmCheckingPanel::OnSearchTxtEntered)
 wxEND_EVENT_TABLE()
@@ -124,10 +125,11 @@ bool mmCheckingPanel::Create(
     if (! wxPanel::Create(parent, winid, pos, size, style, name)) return false;
 
     this->windowsFreezeThaw();
+    wxDateTime start = wxDateTime::UNow();
     CreateControls();
 
     m_transFilterActive = false;
-    m_trans_filter_dlg = new mmFilterTransactionsDialog(this);
+    m_trans_filter_dlg = new mmFilterTransactionsDialog(this, m_AccountID);
     SetTransactionFilterState(true);
 
     initViewTransactionsHeader();
@@ -138,7 +140,7 @@ bool mmCheckingPanel::Create(
     GetSizer()->SetSizeHints(this);
     this->windowsFreezeThaw();
 
-    Model_Usage::instance().pageview(this);
+    Model_Usage::instance().pageview(this, (wxDateTime::UNow() - start).GetMilliseconds().ToLong());
 
     return true;
 }
@@ -205,9 +207,10 @@ void mmCheckingPanel::filterTable()
         if (Model_Checking::status(tran.STATUS) == Model_Checking::RECONCILED)
             m_reconciled_balance += transaction_amount;
 
+        Model_Checking::Full_Data full_tran(tran, splits);
         if (m_transFilterActive)
         {
-            if (!m_trans_filter_dlg->checkAll(tran, m_AccountID, splits))
+            if (!m_trans_filter_dlg->checkAll(full_tran, m_AccountID))
                 continue;
         }
         else
@@ -219,7 +222,6 @@ void mmCheckingPanel::filterTable()
             }
         }
 
-        Model_Checking::Full_Data full_tran(tran, splits);
         full_tran.PAYEENAME = full_tran.real_payee_name(m_AccountID);
         full_tran.BALANCE = m_account_balance;
         full_tran.AMOUNT = transaction_amount;
@@ -1114,7 +1116,7 @@ void TransactionListCtrl::OnMouseRightClick(wxMouseEvent& event)
     if (hide_menu_item || multiselect) menu.Enable(MENU_ON_DUPLICATE_TRANSACTION, false);
 
     menu.Append(MENU_TREEPOPUP_MOVE2, _("&Move Transaction"));
-    if (hide_menu_item || multiselect || type_transfer || (Model_Account::checking_account_num() < 2) || is_foreign)
+    if (hide_menu_item || multiselect || type_transfer || (Model_Account::money_accounts_num() < 2) || is_foreign)
         menu.Enable(MENU_TREEPOPUP_MOVE2, false);
 
     menu.AppendSeparator();

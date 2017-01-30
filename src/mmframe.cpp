@@ -2,7 +2,7 @@
  Copyright (C) 2006 Madhan Kanagavel
  Copyright (C) 2012 Stefano Giorgio
  Copyright (C) 2013 Nikolay
- Copyright (C) 2014 James Higley
+ Copyright (C) 2014, 2017 James Higley
  Copyright (C) 2014 Guan Lisheng (guanlisheng@gmail.com)
 
  This program is free software; you can redistribute it and/or modify
@@ -147,6 +147,7 @@ EVT_UPDATE_UI(MENU_VIEW_LINKS, mmGUIFrame::OnViewLinksUpdateUI)
 EVT_MENU(MENU_TREEPOPUP_NEW, mmGUIFrame::OnNewTransaction)
 EVT_MENU(MENU_TREEPOPUP_EDIT, mmGUIFrame::OnPopupEditAccount)
 EVT_MENU(MENU_TREEPOPUP_REALLOCATE, mmGUIFrame::OnPopupReallocateAccount)
+EVT_MENU(MENU_TREEPOPUP_ACCOUNT_BASE_BALANCE, mmGUIFrame::OnPopupAccountBaseBalance)
 EVT_MENU(MENU_TREEPOPUP_DELETE, mmGUIFrame::OnPopupDeleteAccount)
 
 EVT_TREE_ITEM_MENU(wxID_ANY, mmGUIFrame::OnItemMenu)
@@ -178,6 +179,8 @@ EVT_MENU_RANGE(wxID_FILE1, wxID_FILE9, mmGUIFrame::OnRecentFiles)
 EVT_MENU(MENU_RECENT_FILES_CLEAR, mmGUIFrame::OnClearRecentFiles)
 EVT_MENU(MENU_VIEW_TOGGLE_FULLSCREEN, mmGUIFrame::OnToggleFullScreen)
 EVT_CLOSE(mmGUIFrame::OnClose)
+
+EVT_MENU_RANGE(MENU_TREEPOPUP_HIDE_SHOW_REPORT, MENU_TREEPOPUP_HIDE_SHOW_REPORT32, mmGUIFrame::OnHideShowReport)
 
 wxEND_EVENT_TABLE()
 //----------------------------------------------------------------------------
@@ -498,8 +501,8 @@ void mmGUIFrame::OnAutoRepeatTransactionsTimer(wxTimerEvent& /*event*/)
     //Auto recurring transaction
     bool continueExecution = false;
 
-	Model_Billsdeposits::AccountBalance bal;
-	Model_Billsdeposits& bills = Model_Billsdeposits::instance();
+    Model_Billsdeposits::AccountBalance bal;
+    Model_Billsdeposits& bills = Model_Billsdeposits::instance();
     for (const auto& q1 : bills.all())
     {
         bills.decode_fields(q1);
@@ -720,11 +723,22 @@ void mmGUIFrame::updateNavTreeControl()
     m_nav_tree_ctrl->SetItemData(budgeting, new mmTreeItemData("Budgeting"));
     m_nav_tree_ctrl->SetItemBold(budgeting, true);
 
+    const DB_Table_BUDGETYEAR_V1::Data_Set all_budgets = Model_Budgetyear::instance().all(Model_Budgetyear::COL_BUDGETYEARNAME);
+    bool have_budget = (all_budgets.size() > 0);
+    for (const auto& e : Model_Budgetyear::instance().all(Model_Budgetyear::COL_BUDGETYEARNAME))
+    {
+        int id = e.BUDGETYEARID;
+        const wxString& name = e.BUDGETYEARNAME;
+
+        wxTreeItemId bYear = m_nav_tree_ctrl->AppendItem(budgeting, name, img::CALENDAR_PNG, img::CALENDAR_PNG);
+        m_nav_tree_ctrl->SetItemData(bYear, new mmTreeItemData(id, true));
+    }
+
     wxTreeItemId reports = m_nav_tree_ctrl->AppendItem(root, _("Reports"), img::PIECHART_PNG, img::PIECHART_PNG);
     m_nav_tree_ctrl->SetItemBold(reports, true);
     m_nav_tree_ctrl->SetItemData(reports, new mmTreeItemData("Reports"));
 
-    this->updateReportNavigation(reports, budgeting);
+    this->updateReportNavigation(reports, have_budget);
 
     ///////////////////////////////////////////////////////////////////
 
@@ -932,23 +946,7 @@ void mmGUIFrame::OnSelChanged(wxTreeEvent& event)
         if (iData->isBudgetingNode())
         {
             int year = iData->getData();
-
-            wxTreeItemId idparent = m_nav_tree_ctrl->GetItemParent(selectedItem);
-            mmTreeItemData* iParentData = dynamic_cast<mmTreeItemData*>(m_nav_tree_ctrl->GetItemData(idparent));
-            if (iParentData->getString() == "item@Budget Performance") //FIXME: this is report
-            {
-                mmPrintableBase* rs = new mmReportBudgetingPerformance(year);
-                createReportsPage(rs, true);
-            }
-            else if (iParentData->getString() == "item@Budget Setup Performance") //FIXME: this is report
-            {
-                mmPrintableBase* rs = new mmReportBudgetCategorySummary(year);
-                createReportsPage(rs, true);
-            }
-            else
-            {
-                createBudgetingPage(year);
-            }
+            createBudgetingPage(year);
         }
         else
         {
@@ -1072,6 +1070,30 @@ void mmGUIFrame::OnPopupReallocateAccount(wxCommandEvent& WXUNUSED(event))
         ReallocateAccount(account_id);
     }
 }
+
+void mmGUIFrame::OnPopupAccountBaseBalance(wxCommandEvent& WXUNUSED(event))
+{
+    if (selectedItemData_)
+    {
+        int account_id = selectedItemData_->getData();
+        Model_Account::Data* account = Model_Account::instance().get(account_id);
+        Model_Currency::Data* acc_currency = Model_Account::currency(account);
+        Model_Currency::Data* base_currency = Model_Currency::GetBaseCurrency();
+
+        double acc_bal = Model_Account::balance(account);
+        double acc_base_bal = acc_bal * acc_currency->BASECONVRATE;
+
+        wxString message = wxString::Format(
+            _("Account: %s\n\n"
+              "Balance at currency %s: %s\n"
+              "Balance at currency %s: %s"),
+            account->ACCOUNTNAME,
+            acc_currency->CURRENCY_SYMBOL, Model_Currency::toCurrency(acc_bal, acc_currency),
+            base_currency->CURRENCY_SYMBOL, Model_Currency::toCurrency(acc_base_bal));
+        wxMessageBox(message, _("Foreign Currency Account Balance"));
+    }
+}
+
 //----------------------------------------------------------------------------
 
 void mmGUIFrame::OnPopupDeleteAccount(wxCommandEvent& /*event*/)
@@ -1148,6 +1170,7 @@ void mmGUIFrame::showTreePopupMenu(const wxTreeItemId& id, const wxPoint& pt)
                 menu.Append(MENU_TREEPOPUP_REALLOCATE, _("&Reallocate Account"));
                 menu.Append(MENU_TREEPOPUP_DELETE, _("&Delete Account"));
                 menu.AppendSeparator();
+                menu.Append(MENU_TREEPOPUP_ACCOUNT_BASE_BALANCE, _("&Foreign Currency Balance"));
                 menu.Append(MENU_TREEPOPUP_LAUNCHWEBSITE, _("&Launch Account Website"));
                 // Enable menu item only if a website exists for the account.
                 bool webStatus = !account->WEBSITE.IsEmpty();
@@ -1172,6 +1195,13 @@ void mmGUIFrame::showTreePopupMenu(const wxTreeItemId& id, const wxPoint& pt)
         {
             wxMenu menu;
             menu.Append(wxID_VIEW_LIST, _("General Report Manager"));
+            wxMenu *hideShowReport = new wxMenu;
+            for (int r = 0; r < Option::instance().ReportCount(); r++)
+            {
+                hideShowReport->Append(MENU_TREEPOPUP_HIDE_SHOW_REPORT + r, Option::instance().ReportFullName(r), wxEmptyString, wxITEM_CHECK);
+                hideShowReport->Check(MENU_TREEPOPUP_HIDE_SHOW_REPORT + r, !Option::instance().HideReport(r));
+            }
+            menu.AppendSubMenu(hideShowReport, _("Hide/Show Report"));
             PopupMenu(&menu, pt);
         }
         else if (iData->getString() == "item@Bank Accounts" ||
@@ -1433,6 +1463,14 @@ void mmGUIFrame::createMenu()
     menuView->AppendSeparator();
     menuView->Append(menuItemToggleFullscreen);
 #endif
+    menuView->AppendSeparator();
+    wxMenu *hideShowReport = new wxMenu;
+    for (int r = 0; r < Option::instance().ReportCount(); r++)
+    {
+        hideShowReport->Append(MENU_TREEPOPUP_HIDE_SHOW_REPORT + r, Option::instance().ReportFullName(r), wxEmptyString, wxITEM_CHECK);
+        hideShowReport->Check(MENU_TREEPOPUP_HIDE_SHOW_REPORT + r, !Option::instance().HideReport(r));
+    }
+    menuView->AppendSubMenu(hideShowReport, _("Hide/Show Report"));
     wxMenu *menuAccounts = new wxMenu;
 
     wxMenuItem* menuItemAcctList = new wxMenuItem(menuAccounts, MENU_ACCTLIST
@@ -2328,7 +2366,7 @@ void mmGUIFrame::OnTransactionReport(wxCommandEvent& /*event*/)
     if (!m_db) return;
     if (Model_Account::instance().all().empty()) return;
 
-    mmFilterTransactionsDialog* dlg = new mmFilterTransactionsDialog(this);
+    mmFilterTransactionsDialog* dlg = new mmFilterTransactionsDialog(this, gotoAccountID_);
     if (dlg->ShowModal() == wxID_OK)
     {
         mmReportTransactions* rs = new mmReportTransactions(dlg->getAccountID(), dlg);
@@ -2872,3 +2910,10 @@ void mmGUIFrame::OnClose(wxCloseEvent&)
     Destroy();
 }
 
+void mmGUIFrame::OnHideShowReport(wxCommandEvent& event)
+{
+    int report = event.GetId() - MENU_TREEPOPUP_HIDE_SHOW_REPORT;
+    Option::instance().HideReport(report, !Option::instance().HideReport(report));
+    updateNavTreeControl();
+    createHomePage();
+}

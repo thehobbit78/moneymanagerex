@@ -50,16 +50,24 @@ Model_Checking::~Model_Checking()
 
 wxArrayString Model_Checking::all_type()
 {
-    wxArrayString types;
-    for (const auto& r : TYPE_CHOICES) types.Add(r.second);
-
+    static wxArrayString types;
+    if (types.empty())
+    {
+        for (const auto& r : TYPE_CHOICES)
+            types.Add(r.second);
+    }
     return types;
 }
 
 wxArrayString Model_Checking::all_status()
 {
-    wxArrayString status;
-    for (const auto& r : STATUS_ENUM_CHOICES) status.Add(r.second);
+    static wxArrayString status;
+
+    if (status.empty())
+    {
+        for (const auto& r : STATUS_ENUM_CHOICES)
+            status.Add(r.second);
+    }
 
     return status;
 }
@@ -106,6 +114,11 @@ const Model_Splittransaction::Data_Set Model_Checking::splittransaction(const Da
 DB_Table_CHECKINGACCOUNT_V1::TRANSDATE Model_Checking::TRANSDATE(const wxDate& date, OP op)
 {
     return DB_Table_CHECKINGACCOUNT_V1::TRANSDATE(date.FormatISODate(), op);
+}
+
+DB_Table_CHECKINGACCOUNT_V1::TRANSDATE Model_Checking::TRANSDATE(const wxString& date, OP op)
+{
+    return DB_Table_CHECKINGACCOUNT_V1::TRANSDATE(date, op);
 }
 
 DB_Table_CHECKINGACCOUNT_V1::STATUS Model_Checking::STATUS(STATUS_ENUM status, OP op)
@@ -279,9 +292,7 @@ bool Model_Checking::is_deposit(const Data* r)
 
 wxString Model_Checking::toShortStatus(const wxString& fullStatus)
 {
-    wxString s = fullStatus.Left(1);
-    s.Replace("N", "");
-    return s;
+    return fullStatus.Left(1) == "N" ? "" : fullStatus.Left(1);
 }
 
 Model_Checking::Full_Data::Full_Data() : Data(0), BALANCE(0), AMOUNT(0)

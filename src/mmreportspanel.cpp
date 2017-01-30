@@ -1,5 +1,6 @@
 /*******************************************************
  Copyright (C) 2006 Madhan Kanagavel
+ Copyright (C) 2017 James Higley
 
  This program is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -53,7 +54,8 @@ public:
                 if (transaction)
                 {
                     const Model_Account::Data* account = Model_Account::instance().get(transaction->ACCOUNTID);
-                    if (account) {
+                    if (account)
+                    {
                         frame->setAccountNavTreeSection(account->ACCOUNTNAME);
                         frame->setGotoAccountID(transaction->ACCOUNTID, transID);
                         wxCommandEvent evt(wxEVT_COMMAND_MENU_SELECTED, MENU_GOTOACCOUNT);
@@ -74,7 +76,7 @@ public:
                     {
                         m_reportPanel->rb_->getHTMLText();
                     }
-                    m_reportPanel->browser_->LoadURL(getURL(mmex::getReportIndex()));
+                    m_reportPanel->browser_->LoadURL(getURL(mmex::getReportFullName(this->GetName())));
                 }
             }
         }
@@ -86,7 +88,7 @@ public:
             if (Model_Attachment::instance().all_type().Index(RefType) != wxNOT_FOUND && RefId > 0)
             {
                 mmAttachmentManage::OpenAttachmentFromPanelIcon(nullptr, RefType, RefId);
-                m_reportPanel->browser_->LoadURL(getURL(mmex::getReportIndex()));
+                m_reportPanel->browser_->LoadURL(getURL(mmex::getReportFullName(this->GetName())));
             }
         }
 
@@ -99,10 +101,12 @@ private:
 enum
 {
     ID_CHOICE_DATE_RANGE = wxID_HIGHEST + 1,
+    ID_CHOICE_ACCOUNTS = wxID_HIGHEST + 2,
 };
 
 wxBEGIN_EVENT_TABLE(mmReportsPanel, wxPanel)
     EVT_CHOICE(ID_CHOICE_DATE_RANGE, mmReportsPanel::OnDateRangeChanged)
+    EVT_CHOICE(ID_CHOICE_ACCOUNTS, mmReportsPanel::OnAccountChanged)
 wxEND_EVENT_TABLE()
 
 mmReportsPanel::mmReportsPanel(
@@ -113,6 +117,7 @@ mmReportsPanel::mmReportsPanel(
     : rb_(rb)
     , m_date_ranges(nullptr)
     , cleanup_(cleanupReport)
+    , cleanupmem_(false)
     , m_frame(frame)
 {
     m_all_date_ranges.push_back(new mmCurrentMonth());
@@ -140,6 +145,14 @@ mmReportsPanel::mmReportsPanel(
 
 mmReportsPanel::~mmReportsPanel()
 {
+    if (cleanupmem_ && m_date_ranges)
+    {
+        for (unsigned int i = 0; i < m_date_ranges->GetCount(); i++)
+        {
+            int *id = reinterpret_cast<int*>(m_date_ranges->GetClientData(i));
+            delete id;
+        }
+    }
     if (cleanup_ && rb_)
         delete rb_;
     std::for_each(m_all_date_ranges.begin(), m_all_date_ranges.end(), std::mem_fun(&mmDateRange::destroy));
@@ -152,6 +165,7 @@ bool mmReportsPanel::Create(wxWindow *parent, wxWindowID winid
 {
     SetExtraStyle(GetExtraStyle() | wxWS_EX_BLOCK_EVENTS);
     wxPanel::Create(parent, winid, pos, size, style, name);
+    wxDateTime start = wxDateTime::UNow();
 
     CreateControls();
     GetSizer()->Fit(this);
@@ -159,11 +173,11 @@ bool mmReportsPanel::Create(wxWindow *parent, wxWindowID winid
 
     wxString error;
     if (saveReportText(error))
-        browser_->LoadURL(getURL(mmex::getReportIndex()));
+        browser_->LoadURL(getURL(mmex::getReportFullName(rb_->file_name())));
     else
         browser_->SetPage(error, "");
 
-    Model_Usage::instance().pageview(this);
+    Model_Usage::instance().pageview(this, (wxDateTime::UNow() - start).GetMilliseconds().ToLong());
 
     return TRUE;
 }
@@ -175,14 +189,23 @@ bool mmReportsPanel::saveReportText(wxString& error, bool initial)
     {
         rb_->initial_report(initial);
         if (this->m_date_ranges)
-            rb_->date_range(static_cast<mmDateRange*>(this->m_date_ranges->GetClientData(this->m_date_ranges->GetSelection())), this->m_date_ranges->GetSelection());
+        {
+            if (rb_->has_date_range())
+                rb_->date_range(static_cast<mmDateRange*>(this->m_date_ranges->GetClientData(this->m_date_ranges->GetSelection()))
+                    , this->m_date_ranges->GetSelection());
+            else if (rb_->has_budget_dates())
+                rb_->date_range(nullptr, *reinterpret_cast<int*>(this->m_date_ranges->GetClientData(this->m_date_ranges->GetSelection())));
+        }
 
         json::Object o;
         o[L"module"] = json::String(L"Report");
         o[L"name"] = json::String(rb_->title().ToStdWstring());
         o[L"start"] = json::String(wxDateTime::Now().FormatISOCombined().ToStdWstring());
 
-        error = rb_->getHTMLText();
+        const auto file_name = rb_->file_name();
+        wxLogDebug("Report File Name: %s", file_name);
+        if (!Model_Report::outputReportFile(rb_->getHTMLText(), file_name))
+            error = _("Error");
 
         o[L"end"] = json::String(wxDateTime::Now().FormatISOCombined().ToStdWstring());
         Model_Usage::instance().append(o);
@@ -206,29 +229,97 @@ void mmReportsPanel::CreateControls()
         , wxID_ANY, _("REPORTS"));
     itemStaticText9->SetFont(this->GetFont().Larger().Bold());
     itemBoxSizerHeader->Add(itemStaticText9, 0, wxALL, 1);
+    itemBoxSizerHeader->AddSpacer(30);
 
-    if (rb_ && rb_->has_date_range())
+    if (rb_)
     {
-        m_date_ranges = new wxChoice(itemPanel3, ID_CHOICE_DATE_RANGE);
-
-        for (const auto & date_range: m_all_date_ranges)
+        if (rb_->has_date_range())
         {
-            m_date_ranges->Append(date_range->local_title(), date_range);
+            wxStaticText* itemStaticTextH1 = new wxStaticText(itemPanel3, wxID_ANY, _("Period:"));
+            itemStaticTextH1->SetFont(this->GetFont().Larger());
+            itemBoxSizerHeader->Add(itemStaticTextH1, 0, wxALL, 1);
+            itemBoxSizerHeader->AddSpacer(5);
+            m_date_ranges = new wxChoice(itemPanel3, ID_CHOICE_DATE_RANGE);
+
+            for (const auto & date_range: m_all_date_ranges)
+            {
+                m_date_ranges->Append(date_range->local_title(), date_range);
+            }
+            m_date_ranges->SetSelection(rb_->getDateSelection());
+
+            itemBoxSizerHeader->Add(m_date_ranges, 0, wxALL, 1);
+            itemBoxSizerHeader->AddSpacer(5);
+            const mmDateRange* date_range = *m_all_date_ranges.begin();
+            m_start_date = new wxDatePickerCtrl(itemPanel3, wxID_ANY);
+            m_start_date->SetValue(date_range->start_date());
+            m_start_date->Enable(false);
+
+            m_end_date = new wxDatePickerCtrl(itemPanel3, wxID_ANY);
+            m_end_date->SetValue(date_range->end_date());
+            m_end_date->Enable(false);
+
+            itemBoxSizerHeader->Add(m_start_date, 0, wxALL, 1);
+            itemBoxSizerHeader->AddSpacer(5);
+            itemBoxSizerHeader->Add(m_end_date, 0, wxALL, 1);
+            itemBoxSizerHeader->AddSpacer(30);
         }
-        m_date_ranges->SetSelection(rb_->getDateSelection());
+        else if (rb_->has_budget_dates())
+        {
+            cleanupmem_ = true;
+            wxStaticText* itemStaticTextH1 = new wxStaticText(itemPanel3, wxID_ANY, _("Period:"));
+            itemStaticTextH1->SetFont(this->GetFont().Larger());
+            itemBoxSizerHeader->Add(itemStaticTextH1, 0, wxALL, 1);
+            itemBoxSizerHeader->AddSpacer(5);
+            m_date_ranges = new wxChoice(itemPanel3, ID_CHOICE_DATE_RANGE, wxDefaultPosition, wxDefaultSize, 0, NULL, wxCB_SORT);
 
-        itemBoxSizerHeader->Add(m_date_ranges, 0, wxALL, 1);
-        const mmDateRange* date_range = *m_all_date_ranges.begin();
-        m_start_date = new wxDatePickerCtrl(itemPanel3, wxID_ANY);
-        m_start_date->SetValue(date_range->start_date());
-        m_start_date->Enable(false);
+            int prev_selection = rb_->getDateSelection();
+            int cur_selection = 0;
+            bool sel_found = false;
+            for (const auto& e : Model_Budgetyear::instance().all(Model_Budgetyear::COL_BUDGETYEARNAME))
+            {
+                const wxString& name = e.BUDGETYEARNAME;
 
-        m_end_date = new wxDatePickerCtrl(itemPanel3, wxID_ANY);
-        m_end_date->SetValue(date_range->end_date());
-        m_end_date->Enable(false);
+                if (rb_->has_only_years() && name.length() >= 5) // Only add YEARS
+                    continue;
 
-        itemBoxSizerHeader->Add(m_start_date, 0, wxALL, 1);
-        itemBoxSizerHeader->Add(m_end_date, 0, wxALL, 1);
+                int id = e.BUDGETYEARID;
+                m_date_ranges->Append(name, reinterpret_cast<void *>(new int(id)));
+
+                if ((prev_selection != -1) && (!sel_found))
+                {
+                    if (prev_selection == id)
+                        sel_found = true;
+                    else
+                        cur_selection++;
+                }
+            }
+            if (prev_selection == -1)
+                m_date_ranges->SetSelection(m_date_ranges->GetCount() - 1); // Set to latest budget
+            else
+                m_date_ranges->SetSelection(cur_selection);
+            rb_->date_range(nullptr, *reinterpret_cast<int*>(m_date_ranges->GetClientData(this->m_date_ranges->GetSelection())));
+
+            itemBoxSizerHeader->Add(m_date_ranges, 0, wxALL, 1);
+        }
+
+        if (rb_->has_accounts())
+        {
+            wxStaticText* itemStaticTextH2 = new wxStaticText(itemPanel3, wxID_ANY, _("Accounts:"));
+            itemStaticTextH2->SetFont(this->GetFont().Larger());
+            itemBoxSizerHeader->Add(itemStaticTextH2, 0, wxALL, 1);
+            itemBoxSizerHeader->AddSpacer(5);
+            m_accounts = new wxChoice(itemPanel3, ID_CHOICE_ACCOUNTS);
+            m_accounts->Append(_("All Accounts"));
+            m_accounts->Append(_("Specific Accounts"));
+            for (const auto& e : Model_Account::instance().TYPE_CHOICES)
+            {
+                if (e.first != Model_Account::INVESTMENT)
+                    m_accounts->Append(e.second);
+            }
+            m_accounts->SetSelection(rb_->getAccountSelection());
+
+            itemBoxSizerHeader->Add(m_accounts, 0, wxALL, 1);
+        }
     }
 
     browser_ = wxWebView::New(this, mmID_BROWSER);
@@ -247,12 +338,38 @@ void mmReportsPanel::PrintPage()
 
 void mmReportsPanel::OnDateRangeChanged(wxCommandEvent& /*event*/)
 {
-    const mmDateRange* date_range = static_cast<mmDateRange*>(this->m_date_ranges->GetClientData(this->m_date_ranges->GetSelection()));
-    this->m_start_date->SetValue(date_range->start_date());
-    this->m_end_date->SetValue(date_range->end_date());
-    wxString error;
-    if (this->saveReportText(error, false))
-        browser_->LoadURL(getURL(mmex::getReportIndex()));
-    else
-        browser_->SetPage(error, "");
+    if (rb_)
+    {
+        if (rb_->has_date_range())
+        {
+            const mmDateRange* date_range = static_cast<mmDateRange*>(this->m_date_ranges->GetClientData(this->m_date_ranges->GetSelection()));
+            this->m_start_date->SetValue(date_range->start_date());
+            this->m_end_date->SetValue(date_range->end_date());
+        }
+
+        wxString error;
+        if (this->saveReportText(error, false))
+            browser_->LoadURL(getURL(mmex::getReportFullName(rb_->file_name())));
+        else
+            browser_->SetPage(error, "");
+    }
+}
+
+void mmReportsPanel::OnAccountChanged(wxCommandEvent& /*event*/)
+{
+    if (rb_)
+    {
+        int sel = m_accounts->GetSelection();
+        if ((sel == 1) || (sel != rb_->getAccountSelection()))
+        {
+            wxString accountSelection = m_accounts->GetString(sel);
+            rb_->accounts(sel, accountSelection);
+
+            wxString error;
+            if (this->saveReportText(error, false))
+                browser_->LoadURL(getURL(mmex::getReportFullName(rb_->file_name())));
+            else
+                browser_->SetPage(error, "");
+        }
+    }
 }
