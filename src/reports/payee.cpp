@@ -36,9 +36,9 @@ mmReportPayeeExpenses::~mmReportPayeeExpenses()
 {
 }
 
-bool mmReportPayeeExpenses::has_date_range()
+int mmReportPayeeExpenses::report_parameters()
 {
-    return true;
+    return RepParams::DATE_RANGE;
 }
 
 void  mmReportPayeeExpenses::RefreshData()
@@ -98,6 +98,7 @@ wxString mmReportPayeeExpenses::getHTMLText()
     hb.init();
     hb.addDivContainer();
     hb.addHeader(2, title());
+    hb.addDateNow();
     hb.DisplayDateHeading(m_date_range->start_date(), m_date_range->end_date(), m_date_range->is_with_date());
 
     hb.addDivRow();

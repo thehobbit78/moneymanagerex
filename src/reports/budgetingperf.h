@@ -29,12 +29,13 @@ public:
     mmReportBudgetingPerformance();
     virtual ~mmReportBudgetingPerformance();
 
-    virtual bool has_only_years();
+    virtual int report_parameters();
     virtual wxString getHTMLText();
 
 private:
-    const wxString DisplayEstimateMonths(double estimated);
-    const wxString DisplayActualMonths(double estimated, std::map<int, double>& actual);
+    void DisplayRow(mmHTMLBuilder &hb, double estimated, double actual
+        , const wxString& catName, const std::map<int, double>& stats
+        , bool bTotalRow = false);
 };
 
 #endif // MM_EX_REPORTBUDGETING_PERFORMANCE_H_

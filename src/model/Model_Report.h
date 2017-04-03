@@ -58,9 +58,10 @@ public:
     static void prepareTempFolder();
     static bool WindowsUpdateRegistry();
     static bool outputReportFile(const wxString& str, const wxString& name);
+    Data* get(const wxString& name);
 
 public:
-    Data* get(const wxString& name);
+    static bool PrepareSQL(wxString& sql, std::map <wxString, wxString>& rep_params);
 };
 
 #endif // 

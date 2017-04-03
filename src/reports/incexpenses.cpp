@@ -36,14 +36,9 @@ mmReportIncomeExpenses::~mmReportIncomeExpenses()
 {
 }
 
-bool mmReportIncomeExpenses::has_date_range()
+int mmReportIncomeExpenses::report_parameters()
 {
-    return true;
-}
-
-bool mmReportIncomeExpenses::has_accounts()
-{
-    return true;
+    return RepParams::DATE_RANGE | RepParams::ACCOUNTS_LIST;
 }
 
 wxString mmReportIncomeExpenses::getHTMLText()
@@ -74,9 +69,9 @@ wxString mmReportIncomeExpenses::getHTMLText()
     hb.init();
     hb.addDivContainer();
     hb.addHeader(2, this->title());
+    hb.addDateNow();
     hb.DisplayDateHeading(m_date_range->start_date(), m_date_range->end_date(), m_date_range->is_with_date());
     hb.addHeader(3, headerMsg);
-    hb.addDateNow();
 
     std::pair<double, double> income_expenses_pair;
     for (const auto& transaction : Model_Checking::instance().find(
@@ -169,14 +164,9 @@ mmReportIncomeExpensesMonthly::~mmReportIncomeExpensesMonthly()
 {
 }
 
-bool mmReportIncomeExpensesMonthly::has_date_range()
+int mmReportIncomeExpensesMonthly::report_parameters()
 {
-    return true;
-}
-
-bool mmReportIncomeExpensesMonthly::has_accounts()
-{
-    return true;
+    return RepParams::DATE_RANGE | RepParams::ACCOUNTS_LIST;
 }
 
 wxString mmReportIncomeExpensesMonthly::getHTMLText()
@@ -233,6 +223,7 @@ wxString mmReportIncomeExpensesMonthly::getHTMLText()
     hb.init();
     hb.addDivContainer();
     hb.addHeader(2, this->title());
+    hb.addDateNow();
     hb.DisplayDateHeading(m_date_range->start_date(), m_date_range->end_date(), m_date_range->is_with_date());
     hb.addHeader(3, headerMsg);
     hb.addLineBreak();

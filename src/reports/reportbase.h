@@ -1,6 +1,7 @@
 /*******************************************************
  Copyright (C) 2006 Madhan Kanagavel
  Copyright (C) 2017 James Higley
+ Copyright (C) 2017 Nikolay Akimov
 
  This program is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -37,15 +38,14 @@ public:
     virtual void RefreshData() {}
     virtual wxString title() const;
     virtual wxString file_name() const;
-    virtual bool has_date_range() { return false; }
-    virtual bool has_budget_dates() { return false; }
-    virtual bool has_only_years() { return false; }
-    virtual bool has_accounts() { return false; }
-    virtual void date_range(const mmDateRange* date_range, int selection) { this->m_date_range = date_range; this->m_date_selection = selection; }
+    virtual int report_parameters() { return RepParams::NONE;  }
+    virtual void date_range(const mmDateRange* date_range, int selection);
     void accounts(int selection, wxString& name);
     int getDateSelection() { return this->m_date_selection; }
     int getAccountSelection() { return this->m_account_selection; }
     void initial_report(bool initial) { m_initial = initial; }
+    void setSettings(const wxString& settings);
+    void getDates(wxDateTime &begin, wxDateTime &end);
 protected:
     wxString m_title;
     const mmDateRange* m_date_range;
@@ -54,9 +54,21 @@ protected:
     int m_account_selection;
     const wxArrayString* accountArray_;
     bool m_only_active;
+    wxString m_settings;
+    wxDateTime m_begin_date;
+    wxDateTime m_end_date;
 
 public:
     static const char * m_template;
+    enum RepParams 
+    {
+        NONE = 0
+        , SINGLE_DATE = 1
+        , DATE_RANGE = 2
+        , BUDGET_DATES = 4
+        , ONLY_YEARS = 8
+        , ACCOUNTS_LIST = 16
+    };
 };
 
 class mmGeneralReport : public mmPrintableBase
@@ -66,6 +78,7 @@ public:
 
 public:
     wxString getHTMLText();
+    virtual int report_parameters();
 
 private:
     const Model_Report::Data* m_report;
@@ -80,8 +93,6 @@ public:
 private:
     void load_context();
 };
-
-
 
 //----------------------------------------------------------------------------
 #endif // MM_EX_REPORTBASE_H_

@@ -56,11 +56,13 @@ public:
 public:
     void OnDateRangeChanged(wxCommandEvent& event);
     void OnAccountChanged(wxCommandEvent& event);
+    void OnStartEndDateChanged(wxDateEvent& event);
 
 protected:
     std::vector<mmDateRange*> m_all_date_ranges;
     wxChoice* m_date_ranges;
     wxDatePickerCtrl *m_start_date, *m_end_date;
+    mmDateRange* m_cust_date;
     wxChoice* m_accounts;
     wxWebView * browser_;
     mmPrintableBase* rb_;
@@ -73,6 +75,15 @@ private:
     wxString htmlreport_;
 public:
     mmGUIFrame *m_frame;
+
+    enum RepPanel
+    {
+        ID_CHOICE_DATE_RANGE = wxID_HIGHEST + 1,
+        ID_CHOICE_ACCOUNTS,
+        ID_CHOICE_START_DATE,
+        ID_CHOICE_END_DATE,
+    };
+
 };
 
 #endif

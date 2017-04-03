@@ -192,9 +192,9 @@ mmReportChartStocks::~mmReportChartStocks()
 {
 }
 
-bool mmReportChartStocks::has_date_range()
+int mmReportChartStocks::report_parameters()
 {
-    return true;
+    return RepParams::DATE_RANGE;
 }
 
 wxString mmReportChartStocks::getHTMLText()
@@ -203,6 +203,7 @@ wxString mmReportChartStocks::getHTMLText()
     hb.init();
     hb.addDivContainer();
     hb.addHeader(2, title());
+    hb.addDateNow();
 
     wxTimeSpan dtDiff = m_date_range->end_date() - m_date_range->start_date();
     if (m_date_range->is_with_date() && dtDiff.GetDays() <= 366)
