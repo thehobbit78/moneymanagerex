@@ -139,7 +139,7 @@ void ShareTransactionDialog::DataToControls()
         m_commission_ctrl->SetValue(m_stock->COMMISSION, Option::instance().SharePrecision());
         m_transaction_panel->TransactionDate(Model_Stock::PURCHASEDATE(m_stock));
         m_transaction_panel->SetTransactionValue(
-            ( m_stock->NUMSHARES * m_stock->PURCHASEPRICE) + m_stock->COMMISSION, true);
+            (m_stock->NUMSHARES * m_stock->PURCHASEPRICE), m_stock->COMMISSION, true);
     }
     else
     {
@@ -154,13 +154,13 @@ void ShareTransactionDialog::DataToControls()
             Model_Checking::Data* checking_entry = Model_Checking::instance().get(m_translink_entry->CHECKINGACCOUNTID);
             m_transaction_panel->TransactionDate(Model_Checking::TRANSDATE(checking_entry));
             m_transaction_panel->SetTransactionValue(
-                (std::abs(m_share_entry->SHARENUMBER) * m_share_entry->SHAREPRICE) + m_share_entry->SHARECOMMISSION, true);
+                (std::abs(m_share_entry->SHARENUMBER) * m_share_entry->SHAREPRICE), m_share_entry->SHARECOMMISSION, true);
         }
         else
         {
             m_share_num_ctrl->SetValue(0, 0);
             m_share_price_ctrl->SetValue(0, Option::instance().SharePrecision());
-            m_transaction_panel->SetTransactionValue(0, true);
+            m_transaction_panel->SetTransactionValue(0, 0, true);
         }
     }
 }
@@ -207,7 +207,7 @@ void ShareTransactionDialog::CreateControls()
     itemFlexGridSizer6->Add(m_stock_symbol_ctrl, g_flagsH);
     m_stock_symbol_ctrl->SetToolTip(_("Enter the stock symbol. (Optional) Include exchange. eg: IBM.BE"));
 
-    //Share Unit Number 
+    //Share Unit Number
     wxStaticText* number = new wxStaticText(stock_details_panel, wxID_STATIC, _("Share Number"));
     itemFlexGridSizer6->Add(number, g_flagsH);
     number->SetFont(this->GetFont().Bold());
@@ -437,13 +437,13 @@ void ShareTransactionDialog::OnTextEntered(wxCommandEvent& event)
     }
 
     double share_commission = 0;
-    if (!m_commission_ctrl->GetValue().empty())
+    if (m_commission_ctrl != NULL && !m_commission_ctrl->GetValue().empty())
     {
         m_commission_ctrl->GetDouble(share_commission);
     }
 
     if (share_num > 0)
     {
-        m_transaction_panel->SetTransactionValue((share_num * share_price) + share_commission);
+        m_transaction_panel->SetTransactionValue((share_num * share_price), share_commission);
     }
 }

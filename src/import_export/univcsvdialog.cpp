@@ -920,7 +920,7 @@ void mmUnivCSVDialog::OnExport(wxCommandEvent& /*event*/)
 
         pTxFile->AddNewLine();
 
-        Model_Checking::Full_Data tran(pBankTransaction, split);
+        Model_Checking::Full_Data tran(0, pBankTransaction, split);
 
         double value = Model_Checking::balance(pBankTransaction, fromAccountID);
         account_balance += value;
@@ -1080,7 +1080,7 @@ void mmUnivCSVDialog::update_preview()
                 if (Model_Checking::status(pBankTransaction) == Model_Checking::VOID_)
                     continue;
 
-                Model_Checking::Full_Data tran(pBankTransaction, split);
+                Model_Checking::Full_Data tran(0, pBankTransaction, split);
 
                 double value = Model_Checking::balance(pBankTransaction, fromAccountID);
                 account_balance += value;
@@ -1281,18 +1281,10 @@ void mmUnivCSVDialog::OnBrowse(wxCommandEvent& /*event*/)
 
 void mmUnivCSVDialog::OnListBox(wxCommandEvent& event)
 {
-    int sel = event.GetSelection();
-    const wxString& object = event.GetString();
-    //TODO: Add/Remove item if double clicked
     if (m_oject_in_focus == ID_LISTBOX_CANDICATE)
-    {
-        wxLogDebug("Selected Left Control item: %i %s", sel, object);
-    }
+        OnAdd(event);
     else if (m_oject_in_focus == ID_LISTBOX)
-    {
-        wxLogDebug("Selected Right Control item: %i %s", sel, object);
-    }
-
+        OnRemove(event);
 }
 
 void mmUnivCSVDialog::OnDelimiterChange(wxCommandEvent& event)
@@ -1342,8 +1334,8 @@ void mmUnivCSVDialog::parseToken(int index, const wxString& orig_token, tran_hol
             if (!Model_Currency::fromString(token, holder.Amount, Model_Account::currency(Model_Account::instance().get(fromAccountID_)))) return;
 
             Model_Checking::TYPE txType = Model_Checking::WITHDRAWAL;
-            if (holder.Amount > 0.0 && m_choiceAmountFieldSign->GetCurrentSelection() == PositiveIsDeposit ||
-                holder.Amount <= 0.0 && m_choiceAmountFieldSign->GetCurrentSelection() == PositiveIsWithdrawal)
+            if ((holder.Amount > 0.0 && m_choiceAmountFieldSign->GetCurrentSelection() == PositiveIsDeposit) ||
+                (holder.Amount <= 0.0 && m_choiceAmountFieldSign->GetCurrentSelection() == PositiveIsWithdrawal))
             {
                 txType = Model_Checking::DEPOSIT;
             }

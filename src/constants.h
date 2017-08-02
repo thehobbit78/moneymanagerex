@@ -1,3 +1,12 @@
+//----------------------------------------------------------------------------
+// WARNING: The file constants.h is produced by CMake. If you want to make
+//          some changes in this file please use the templated version
+//          constants.h.in and rerun cmake to produce a refreshed
+//          version of constants.h
+//
+// Note:    MMEX version changes are made in the file: ./CMakeLists.txt
+//----------------------------------------------------------------------------
+
 /*******************************************************
 Copyright (C) 2009 VaDiM
 
@@ -50,14 +59,29 @@ const wxString getTitleProgramVersion();
 const wxString getProgramCopyright();
 const wxString getProgramDescription();
 
+/*************************************************************************
+ MMEX_VERSION
+ Update the version definition for the program as follows:
+ Version Format = MAJOR.MINOR.PATCH, increment the:
+ 1. MAJOR version when you make incompatible API changes,
+ 2. MINOR version when you add functionality in a backwards-compatible manner, and
+ 3. PATCH version when you make backwards-compatible bug fixes.
+ Ref: http://semver.org
+
+ Alpha, Beta, RC  = -1 (Stable) won't add any suffix
+ Alpha, Beta, RC  = 0 (Unstable) will add suffix to version without number
+ Alpha, Beta, RC  > 0 (Unstable) will add suffix to version with number
+
+ For Internet Format for update checking read in util.cpp
+ *************************************************************************/
 namespace version
 {
-    extern const int Major;
-    extern const int Minor;
-    extern const int Patch;
-    extern const int Alpha;
-    extern const int Beta;
-    extern const int RC;
+    const int Major = 1;
+    const int Minor = 4;
+    const int Patch = 0;
+    const int Alpha = 1;
+    const int Beta  = -1;
+    const int RC    = -1;
     extern const wxString string;
     extern const wxString generateProgramVersion
         (int vMajor, int vMinor, int vPatch, int vAlpha, int vBeta, int vRC);
@@ -75,8 +99,12 @@ namespace weblink
     extern const wxString NewsRSS;
     extern const wxString Forum;
     extern const wxString Wiki;
+    extern const wxString GitHub;
+    extern const wxString YouTube;
+    extern const wxString Slack;
     extern const wxString BugReport;
     extern const wxString Donate;
+    extern const wxString SquareCashGuan;
     extern const wxString Twitter;
     extern const wxString Facebook;
     extern const wxString YahooQuotes;

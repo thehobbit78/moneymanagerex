@@ -400,11 +400,12 @@ const std::unordered_map<wxString, wxString> &date_formats_regex()
     date_regex["%Y.%m.%d"] = wxString::Format("^%s\x2E%s\x2E%s*", yyyy, mm, dd);
     date_regex["%Y %m %d"] = wxString::Format("^%s %s %s*", yyyy, mm, dd);
     date_regex["%Y%m%d"] = wxString::Format("^%s%s%s*", yyyy, mm, dd);
+    date_regex["%Y%d%m"] = wxString::Format("^%s%s%s*", yyyy, mm, dd);
 
     return date_regex;
 }
 
-const std::unordered_map<wxString, wxString> g_date_formats_map = {
+const std::map<wxString, wxString> g_date_formats_map = {
     { "%Y-%m-%d", "YYYY-MM-DD" }
     , { "%d/%m/%y", "DD/MM/YY" }
     , { "%d/%m/%Y", "DD/MM/YYYY" }
@@ -427,6 +428,7 @@ const std::unordered_map<wxString, wxString> g_date_formats_map = {
     , { "%Y.%m.%d", "YYYY.MM.DD" }
     , { "%Y %m %d", "YYYY MM DD" }
     , { "%Y%m%d", "YYYYMMDD" }
+    , { "%Y%d%m", "YYYYDDMM" }
 };
 
 const std::map<int, std::pair<wxConvAuto, wxString> > g_encoding = {
@@ -537,7 +539,7 @@ void mmCalcValidator::OnChar(wxKeyEvent& event)
     if (!m_validatorWindow || !text_field)
         return event.Skip();
 
-    wxChar decChar = text_field->currency_->DECIMAL_POINT[0];
+    wxChar decChar = text_field->m_currency->DECIMAL_POINT[0];
     bool numpad_dec_swap = (wxGetKeyState(wxKeyCode(WXK_NUMPAD_DECIMAL)) && decChar != str);
     
     if (numpad_dec_swap)

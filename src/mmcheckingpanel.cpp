@@ -1,6 +1,7 @@
 /*******************************************************
  Copyright (C) 2006 Madhan Kanagavel
  Copyright (C) 2014-2016 Nikolay Akimov
+ Copyright (C) 2017 Stefano Giorgio [stef145g]
 
  This program is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -203,13 +204,14 @@ void mmCheckingPanel::filterTable()
     for (const auto& tran : Model_Account::transaction(this->m_account))
     {
         double transaction_amount = Model_Checking::amount(tran, m_AccountID);
-        if (Model_Checking::status(tran.STATUS) != Model_Checking::VOID_)
+        Model_Checking::Full_Data full_tran(m_AccountID, tran, splits);
+
+        if (Model_Checking::status(full_tran.STATUSFD) != Model_Checking::VOID_)
             m_account_balance += transaction_amount;
 
-        if (Model_Checking::status(tran.STATUS) == Model_Checking::RECONCILED)
+        if (Model_Checking::status(full_tran.STATUSFD) == Model_Checking::RECONCILED)
             m_reconciled_balance += transaction_amount;
 
-        Model_Checking::Full_Data full_tran(tran, splits);
         if (m_transFilterActive)
         {
             if (!m_trans_filter_dlg->checkAll(full_tran, m_AccountID))
@@ -245,10 +247,10 @@ void mmCheckingPanel::updateTable()
         m_account_balance = m_account->INITIALBAL;
         m_reconciled_balance = m_account_balance;
     }
-    for (const auto& tran : Model_Account::transaction(m_account))
+    for (const auto& tran : m_trans /*Model_Account::transaction(m_account)*/)
     {
         double transaction_amount = Model_Checking::amount(tran, m_AccountID);
-        if (Model_Checking::status(tran.STATUS) != Model_Checking::VOID_)
+        if (Model_Checking::status(tran.STATUSFD) != Model_Checking::VOID_)
             m_account_balance += transaction_amount;
         m_reconciled_balance += Model_Checking::reconciled(tran, m_AccountID);
     }
@@ -582,10 +584,15 @@ void mmCheckingPanel::updateExtraTransactionData(int selIndex)
     if (selIndex > -1)
     {
         enableEditDeleteButtons(true);
-        const Model_Checking::Data& tran = this->m_trans.at(selIndex);
-        Model_Checking::Full_Data full_tran(tran);
-        m_info_panel->SetLabelText(tran.NOTES);
+
+        Model_Checking::Full_Data& full_tran = this->m_trans.at(selIndex);
+        m_info_panel->SetLabelText(full_tran.NOTES);
         wxString miniStr = full_tran.info();
+
+		if (Model_Checking::foreignTransaction(full_tran))
+		{
+			m_btnDuplicate->Enable(false);
+		}
 
         //Show only first line but full string set as tooltip
         if (miniStr.Find("\n") > 1 && !miniStr.IsEmpty())
@@ -598,7 +605,6 @@ void mmCheckingPanel::updateExtraTransactionData(int selIndex)
             m_info_panel_mini->SetLabelText(miniStr);
             m_info_panel_mini->SetToolTip(miniStr);
         }
-
     }
     else
     {
@@ -826,7 +832,7 @@ const wxString mmCheckingPanel::getItem(long item, long column)
     case TransactionListCtrl::COL_PAYEE_STR:
         return tran.is_foreign_transfer() ? "< " + tran.PAYEENAME : tran.PAYEENAME;
     case TransactionListCtrl::COL_STATUS:
-        return tran.is_foreign() ? "< " + tran.STATUS : tran.STATUS;
+        return tran.is_foreign() ? "< " + tran.STATUSFD : tran.STATUSFD;
     case TransactionListCtrl::COL_WITHDRAWAL:
         return tran.AMOUNT <= 0 ? Model_Currency::toString(std::fabs(tran.AMOUNT), this->m_currency) : "";
     case TransactionListCtrl::COL_DEPOSIT:
@@ -1121,7 +1127,7 @@ void TransactionListCtrl::OnMouseRightClick(wxMouseEvent& event)
     if (hide_menu_item || multiselect) menu.Enable(MENU_ON_DUPLICATE_TRANSACTION, false);
 
     menu.Append(MENU_TREEPOPUP_MOVE2, _("&Move Transaction"));
-    if (hide_menu_item || multiselect || type_transfer || (Model_Account::money_accounts_num() < 2) || is_foreign)
+    if (hide_menu_item || type_transfer || (Model_Account::money_accounts_num() < 2) || is_foreign)
         menu.Enable(MENU_TREEPOPUP_MOVE2, false);
 
     menu.AppendSeparator();
@@ -1198,14 +1204,12 @@ void TransactionListCtrl::OnMarkTransaction(wxCommandEvent& event)
     else if (evt == MENU_TREEPOPUP_MARKDUPLICATE)          status = "D";
     else wxASSERT(false);
 
-    Model_Checking::Data *trx = Model_Checking::instance().get(m_cp->m_trans[m_selectedIndex].TRANSID);
-    if (trx)
-    {
-        org_status = trx->STATUS;
-        m_cp->m_trans[m_selectedIndex].STATUS = status;
-        trx->STATUS = status;
-        Model_Checking::instance().save(trx);
-    }
+    Model_Checking::Full_Data& trx = m_cp->m_trans[m_selectedIndex];
+    TransactionStatus trx_status(trx);
+    org_status = trx_status.Status(m_cp->m_AccountID);
+    trx_status.SetStatus(status, m_cp->m_AccountID, trx);
+    trx.STATUSFD = trx_status.Status(m_cp->m_AccountID);
+    Model_Checking::instance().save(&trx);
 
     bool bRefreshRequired = (status == "V") || (org_status == "V");
 
@@ -1262,10 +1266,12 @@ void TransactionListCtrl::OnMarkAllTransactions(wxCommandEvent& event)
     }
     else
     {
-        for (auto& tran : m_cp->m_trans)
+        for (auto& trx : m_cp->m_trans)
         {
-            tran.NOTES.Replace(mmAttachmentManage::GetAttachmentNoteSign(), wxEmptyString, true);
-            tran.STATUS = status;
+            trx.NOTES.Replace(mmAttachmentManage::GetAttachmentNoteSign(), wxEmptyString, true);
+            TransactionStatus trx_status(trx);
+            trx_status.SetStatus(status, m_cp->m_AccountID, trx);
+            trx.STATUSFD = trx_status.Status(m_cp->m_AccountID);
         }
         Model_Checking::instance().save(m_cp->m_trans);
     }
@@ -1792,13 +1798,16 @@ void TransactionListCtrl::refreshVisualList(int trans_id, bool filter)
 
 void TransactionListCtrl::OnMoveTransaction(wxCommandEvent& /*event*/)
 {
-    if ((m_selectedIndex < 0) || (GetSelectedItemCount() > 1)) return;
+    if ((m_selectedIndex < 0)) return;
 
-    Model_Checking::Data checking_entry = m_cp->m_trans[m_selectedIndex];
-    if (TransactionLocked(checking_entry.TRANSDATE))
-    {
-        return;
-    }
+	
+	// Abort if any transaction is locked.
+	for (long index : GetSelected()) {
+		Model_Checking::Data checking_entry = m_cp->m_trans[index];
+		if (TransactionLocked(checking_entry.TRANSDATE)){
+			return;
+		}
+	}
 
     const Model_Account::Data* source_account = Model_Account::instance().get(m_cp->m_AccountID);
     wxString source_name = source_account->ACCOUNTNAME;
@@ -1819,9 +1828,19 @@ void TransactionListCtrl::OnMoveTransaction(wxCommandEvent& /*event*/)
         else
             return;
 
-        Model_Checking::Full_Data& tran = m_cp->m_trans[m_selectedIndex];
-        tran.ACCOUNTID = dest_account_id;
-        Model_Checking::instance().save(&tran);
+		// Update all selected transactions, first grab all transactions as we want to modify multiple ones in sequence and indices can change.
+		std::vector<Model_Checking::Full_Data> transactions;
+		for (long index : GetSelected()) {
+			Model_Checking::Full_Data& tran = m_cp->m_trans[index];
+			transactions.push_back(tran);
+		}
+		
+		// Save the modification
+		for (auto transaction : transactions) {
+			transaction.ACCOUNTID = dest_account_id;
+			Model_Checking::instance().save(&transaction);
+		}
+
         refreshVisualList();
     }
 }

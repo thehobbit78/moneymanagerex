@@ -16,37 +16,14 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  ********************************************************/
 
-#ifdef __WXMSW__
-#define WIN32_LEAN_AND_MEAN
-#endif
-
 #include "constants.h"
 #include <wx/string.h>
 #include <wx/filefn.h>
+#include <wx/utils.h>
 #include "lua.hpp"
 #include "mongoose/mongoose.h"
+#include "db/DB_Upgrade.h" /* for dbLatestVersion */
 
-/*************************************************************************
- MMEX_VERSION
- Update the version definition for the program as follows:
- Version Format = MAJOR.MINOR.PATCH, increment the:
- 1. MAJOR version when you make incompatible API changes,
- 2. MINOR version when you add functionality in a backwards-compatible manner, and
- 3. PATCH version when you make backwards-compatible bug fixes.
- Ref: http://semver.org
-
- Alpha, Beta, RC  = -1 (Stable) won't add any suffix
- Alpha, Beta, RC  = 0 (Unstable) will add suffix to version without number
- Alpha, Beta, RC  > 0 (Unstable) will add suffix to version with number
-
- For Internet Format for update checking read in util.cpp
- *************************************************************************/
-const int mmex::version::Major = 1;
-const int mmex::version::Minor = 3;
-const int mmex::version::Patch = 1;
-const int mmex::version::Alpha = -1;
-const int mmex::version::Beta  = -1;
-const int mmex::version::RC    = -1;
 const wxString mmex::version::string = mmex::version::generateProgramVersion(mmex::version::Major, mmex::version::Minor, mmex::version::Patch
     ,mmex::version::Alpha, mmex::version::Beta, mmex::version::RC);
 
@@ -65,7 +42,7 @@ const wxString mmex::version::generateProgramVersion(int vMajor, int vMinor, int
     return wxString::Format("%i.%i.%i%s", vMajor, vMinor, vPatch, suffix);
 }
 
-/* End version namespace*/
+/* End version namespace */
 
 const wxSizerFlags g_flagsH = wxSizerFlags().Align(wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL).Border(wxALL, 5);
 const wxSizerFlags g_flagsV = wxSizerFlags().Align(wxALIGN_LEFT).Border(wxALL, 5);
@@ -90,7 +67,7 @@ const wxString g_CloseLabel =
 //---------------------------------------------------------------------------
 const int mmex::MIN_DATAVERSION = 2;
 const wxString mmex::DATAVERSION = "3";
-const wxString mmex::DEFDATEFORMAT =  "%Y-%m-%d"; //ISO 8601
+const wxString mmex::DEFDATEFORMAT = "%Y-%m-%d"; //ISO 8601
 const wxString mmex::DEFDELIMTER = ",";
 
 const wxString mmex::getProgramName()
@@ -104,25 +81,68 @@ const wxString mmex::getTitleProgramVersion()
 
 const wxString mmex::getProgramCopyright()
 {
-    return wxString::Format("(c) 2005-%d Madhan Kanagavel", wxDateTime::Now().GetCurrentYear());
+#define COMPILE_YEAR ( (__DATE__[ 7] - '0') * 1000 + \
+                       (__DATE__[ 8] - '0') *  100 + \
+                       (__DATE__[ 9] - '0') *   10 + \
+                       (__DATE__[10] - '0') )
+    return wxString::Format("(c) 2005-%d Madhan Kanagavel", COMPILE_YEAR);
 }
 const wxString mmex::getProgramDescription()
 {
     wxString description;
-    description << _("MMEX is using the following support products") << ":\n"
-        << "======================================\n"
-        << wxVERSION_STRING << "\n"
-        << "SQLite3 " << wxSQLite3Database::GetVersion() << "\n"
-        << wxSQLITE3_VERSION_STRING << "\n"
-        << "Mongoose " << MG_VERSION << "\n"
-        << LUA_VERSION << "\n";
-#if defined(_MSC_VER)
-    description << "Microsoft Visual Studio " << _MSC_VER;
-#elif defined(__clang__)
-    description << "Clang/LLVM " << __VERSION__;
-#elif (defined(__GNUC__) || defined(__GNUG__)) && !(defined(__clang__) || defined(__INTEL_COMPILER))
-    description << "GNU GCC/G++ " << __VERSION__;
+    description << mmex::getTitleProgramVersion() << "\n"
+        << wxString::Format(_("Database version supported: %i"), dbLatestVersion) << "\n"
+#ifdef GIT_COMMIT_HASH
+        << wxString::Format(_("Git commit: %s (%s)"), GIT_COMMIT_HASH, GIT_COMMIT_DATE) << "\n"
 #endif
+#ifdef GIT_BRANCH
+        << wxString::Format(_("Git branch: %s"), GIT_BRANCH) << "\n"
+#endif
+
+        << "\n" << _("MMEX is using the following support products:") << "\n"
+        << L" \u2b25 " << wxVERSION_STRING
+        << wxString::Format(" (%s %d.%d)\n",
+            wxPlatformInfo::Get().GetPortIdName(),
+            wxPlatformInfo::Get().GetToolkitMajorVersion(),
+            wxPlatformInfo::Get().GetToolkitMinorVersion())
+        << L" \u2b25 " << wxSQLITE3_VERSION_STRING
+        << " (SQLite " << wxSQLite3Database::GetVersion() << ")\n"
+        << L" \u2b25 Mongoose " << MG_VERSION << "\n"
+        << L" \u2b25 " << LUA_RELEASE << "\n\n"
+
+        << wxString::Format(_("Build on %s %s with:"), __DATE__, __TIME__) << "\n"
+#if defined(_MSC_VER)
+        << L" \u2b25 Microsoft Visual Studio " << _MSC_VER << "\n"
+#elif defined(__clang__)
+        << L" \u2b25 Clang/LLVM " << __VERSION__ << "\n"
+#elif (defined(__GNUC__) || defined(__GNUG__)) && !(defined(__clang__) || defined(__INTEL_COMPILER))
+        << L" \u2b25 GNU GCC/G++ " << __VERSION__ << "\n"
+#endif
+#ifdef CMAKE_VERSION
+        << L" \u2b25 CMake " CMAKE_VERSION << "\n"
+#endif
+#ifdef MAKE_VERSION
+        << L" \u2b25 GNU Make " MAKE_VERSION << "\n"
+#endif
+
+        << "\n" << _("Running on:") << "\n"
+#ifdef __LINUX__
+        << L" \u2b25 " << wxGetLinuxDistributionInfo().Description
+        << " \"" << wxGetLinuxDistributionInfo().CodeName << "\"\n"
+#endif
+        << L" \u2b25 " << wxGetOsDescription()
+        << " " << wxPlatformInfo::Get().GetEndiannessName() << "\n"
+        << L" \u2b25 " << wxPlatformInfo::Get().GetDesktopEnvironment()
+        << " " << wxLocale::GetLanguageName(wxLocale::GetSystemLanguage())
+        << " " << wxLocale::GetSystemEncodingName() 
+        << wxString::Format(L"\n \u2b25 %ix%ix%ibit %ix%ippi\n",
+            wxGetDisplaySize().GetX(),
+            wxGetDisplaySize().GetY(),
+            wxDisplayDepth(),
+            wxGetDisplayPPI().GetX(),
+            wxGetDisplayPPI().GetY())
+    ;
+    description.RemoveLast();
 
     return description;
 }
@@ -151,8 +171,12 @@ const wxString mmex::weblink::News = mmex::weblink::addReferralToURL("http://www
 const wxString mmex::weblink::NewsRSS = "http://www.moneymanagerex.org/news?format=feed";
 const wxString mmex::weblink::Forum = mmex::weblink::addReferralToURL("http://forum.moneymanagerex.org", "Forum");
 const wxString mmex::weblink::Wiki = "http://wiki.moneymanagerex.org";
-const wxString mmex::weblink::BugReport = "http://bugreport.moneymanagerex.org";
+const wxString mmex::weblink::GitHub = "https://github.com/moneymanagerex/moneymanagerex";
+const wxString mmex::weblink::YouTube = "http://www.youtube.com/user/moneymanagerex";
+const wxString mmex::weblink::Slack = "http://slack.moneymanagerex.org/";
+const wxString mmex::weblink::BugReport = "https://github.com/moneymanagerex/moneymanagerex/issues";
 const wxString mmex::weblink::Donate = "https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=moneymanagerex%40gmail%2ecom&lc=US&item_name=MoneyManagerEx&no_note=0&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHostedGuest";
+const wxString mmex::weblink::SquareCashGuan = "https://cash.me/$guanlisheng/1";
 const wxString mmex::weblink::Twitter = "https://twitter.com/MoneyManagerEx";
 const wxString mmex::weblink::Facebook = "http://www.facebook.com/pages/Money-Manager-Ex/242286559144586";
 // https://greenido.wordpress.com/2009/12/22/yahoo-finance-hidden-api/

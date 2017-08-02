@@ -60,10 +60,11 @@ private:
     Model_Currency::Data* m_currency;
     int m_scale;
 
+private:
     mmTextCtrl* m_currencyName;
-    wxStaticText* sampleText_;
+    wxStaticText* m_sample_text;
     mmTextCtrl* m_currencySymbol;
-    mmTextCtrl* baseConvRate_;
+    mmTextCtrl* m_base_conv_rate;
     wxTextCtrl* pfxTx_;
     wxTextCtrl* sfxTx_;
     wxTextCtrl* decTx_;

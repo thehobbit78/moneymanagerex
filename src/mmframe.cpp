@@ -110,10 +110,9 @@ EVT_MENU(wxID_REFRESH, mmGUIFrame::refreshPanelData)
 EVT_MENU(MENU_BUDGETSETUPDIALOG, mmGUIFrame::OnBudgetSetupDialog)
 EVT_MENU(wxID_HELP, mmGUIFrame::OnHelp)
 EVT_MENU(MENU_CHECKUPDATE, mmGUIFrame::OnCheckUpdate)
-EVT_MENU(MENU_GOOGLEPLAY, mmGUIFrame::OnGooglePlay)
-EVT_MENU(MENU_REPORTISSUES, mmGUIFrame::OnReportIssues)
 EVT_MENU(MENU_ANNOUNCEMENTMAILING, mmGUIFrame::OnBeNotified)
-EVT_MENU(MENU_FACEBOOK, mmGUIFrame::OnFacebook)
+EVT_MENU_RANGE(MENU_FACEBOOK, MENU_TWITTER, mmGUIFrame::OnSimpleURLOpen)
+EVT_MENU(MENU_REPORT_BUG, mmGUIFrame::OnReportBug)
 EVT_MENU(wxID_ABOUT, mmGUIFrame::OnAbout)
 EVT_MENU(wxID_PRINT, mmGUIFrame::OnPrintPage)
 EVT_MENU(MENU_SHOW_APPSTART, mmGUIFrame::OnShowAppStartDialog)
@@ -237,6 +236,8 @@ mmGUIFrame::mmGUIFrame(mmGUIApp* app, const wxString& title
     /* Create the Controls for the frame */
     createMenu();
     CreateToolBar();
+    // Disable menu items incase no database is established.
+    menuEnableItems(false);
     createControls();
 
 #if wxUSE_STATUSBAR
@@ -608,6 +609,7 @@ void mmGUIFrame::menuEnableItems(bool enable)
     menuBar_->FindItem(MENU_NEWACCT)->Enable(enable);
     menuBar_->FindItem(MENU_ACCTLIST)->Enable(enable);
     menuBar_->FindItem(MENU_ACCTEDIT)->Enable(enable);
+    menuBar_->FindItem(MENU_ACCOUNT_REALLOCATE)->Enable(enable);
     menuBar_->FindItem(MENU_ACCTDELETE)->Enable(enable);
 
     menuBar_->FindItem(MENU_ORGCATEGS)->Enable(enable);
@@ -626,12 +628,31 @@ void mmGUIFrame::menuEnableItems(bool enable)
     menuBar_->FindItem(MENU_BUDGETSETUPDIALOG)->Enable(enable);
     menuBar_->FindItem(MENU_TRANSACTIONREPORT)->Enable(enable);
 
+    menuBar_->FindItem(MENU_VIEW_HIDE_SHARE_ACCOUNTS)->Enable(enable);
+    menuBar_->FindItem(MENU_VIEW_BUDGET_FINANCIAL_YEARS)->Enable(enable);
+    menuBar_->FindItem(MENU_VIEW_BUDGET_TRANSFER_TOTAL)->Enable(enable);
+    menuBar_->FindItem(MENU_VIEW_BUDGET_SETUP_SUMMARY)->Enable(enable);
+    menuBar_->FindItem(MENU_VIEW_BUDGET_CATEGORY_SUMMARY)->Enable(enable);
+    menuBar_->FindItem(MENU_VIEW_IGNORE_FUTURE_TRANSACTIONS)->Enable(enable);
+
+    for (int r = 0; r < Option::instance().ReportCount(); r++)
+    {
+        menuBar_->FindItem(MENU_TREEPOPUP_HIDE_SHOW_REPORT + r)->Enable(enable);
+    }
+
+    menuBar_->FindItem(MENU_DB_VACUUM)->Enable(enable);
+    menuBar_->FindItem(MENU_DB_DEBUG)->Enable(enable);
+
     toolBar_->EnableTool(MENU_NEWACCT, enable);
     toolBar_->EnableTool(MENU_ACCTLIST, enable);
     toolBar_->EnableTool(MENU_ORGPAYEE, enable);
     toolBar_->EnableTool(MENU_ORGCATEGS, enable);
     toolBar_->EnableTool(MENU_CURRENCY, enable);
     toolBar_->EnableTool(wxID_VIEW_LIST, enable);
+    toolBar_->EnableTool(MENU_TRANSACTIONREPORT, enable);
+    toolBar_->EnableTool(wxID_PREFERENCES, enable);
+    toolBar_->EnableTool(wxID_NEW, enable);
+    toolBar_->EnableTool(wxID_PRINT, enable);
 }
 //----------------------------------------------------------------------------
 
@@ -1601,44 +1622,92 @@ void mmGUIFrame::createMenu()
     wxMenu *menuHelp = new wxMenu;
 
     wxMenuItem* menuItemHelp = new wxMenuItem(menuTools, wxID_HELP,
-        _("&Help\tF1"), _("Show the Help file"));
+        _("&Help\tF1"), _("Read the User Manual"));
     menuItemHelp->SetBitmap(mmBitmap(png::HELP));
     menuHelp->Append(menuItemHelp);
+    //Community Submenu
+    wxMenuItem* menuItemWebsite = new wxMenuItem(menuTools, MENU_WEBSITE
+        , _("Website")
+        , _("Open the Money Manager EX website for latest news, updates etc"));
+    // menuItemFacebook->SetBitmap(mmBitmap(png::WEBSITE));
+    wxMenuItem* menuItemFacebook = new wxMenuItem(menuTools, MENU_FACEBOOK
+        , _("Facebook"), _("Visit us on Facebook"));
+    menuItemFacebook->SetBitmap(mmBitmap(png::FACEBOOK));
+    wxMenuItem* menuItemTwitter = new wxMenuItem(menuTools, MENU_TWITTER
+        , _("Twitter"), _("Follow us on Twitter"));
+    // menuItemTwitter->SetBitmap(mmBitmap(png::TWITTER));
+    wxMenuItem* menuItemYouTube = new wxMenuItem(menuTools, MENU_YOUTUBE
+        , _("YouTube"), _("Watch free video materials about MMEX"));
+    // menuItemYouTube->SetBitmap(mmBitmap(png::YOUTUBE));
+    wxMenuItem* menuItemSlack = new wxMenuItem(menuTools, MENU_SLACK
+        , _("Slack"), _("Communicate online with MMEX team from your desktop or mobile device"));
+    menuItemSlack->SetBitmap(mmBitmap(png::SLACK));
+    wxMenuItem* menuItemGitHub = new wxMenuItem(menuTools, MENU_GITHUB
+        , _("GitHub"), _("Access open source code repository and track reported bug statuses"));
+    menuItemGitHub->SetBitmap(mmBitmap(png::GITHUB));
+    wxMenuItem* menuItemWiki = new wxMenuItem(menuTools, MENU_WIKI
+        , _("Wiki pages"), _("Read and update wiki pages"));
+    // menuItemWiki->SetBitmap(mmBitmap(png::WIKI));
+    wxMenuItem* menuItemReportIssues = new wxMenuItem(menuTools, MENU_REPORTISSUES
+        , _("Forum")
+        , _("Visit the MMEX forum to see existing user comments or report new issues with the software"));
+    menuItemReportIssues->SetBitmap(mmBitmap(png::FORUM));
+    wxMenuItem* menuItemGooglePlay = new wxMenuItem(menuTools, MENU_GOOGLEPLAY
+        , _("Google Play")
+        , _("Get free Android version and run MMEX on your smart phone or tablet"));
+    menuItemGooglePlay->SetBitmap(mmBitmap(png::GOOGLE_PLAY));
+    wxMenuItem* menuItemNotify = new wxMenuItem(menuTools, MENU_ANNOUNCEMENTMAILING
+        , _("&Newsletter")
+        , _("Subscribe to e-mail newsletter or view existing announcements"));
+    menuItemNotify->SetBitmap(mmBitmap(png::NEWS));
+    wxMenuItem* menuItemRSS = new wxMenuItem(menuTools, MENU_RSS
+        , _("RSS Feed"), _("Connect RSS web feed to news aggregator"));
+    menuItemRSS->SetBitmap(mmBitmap(png::NEWS));
+    wxMenuItem* menuItemDonate = new wxMenuItem(menuTools, MENU_DONATE
+        , _("Donate via PayPal")
+        , _("Donate the team to support infrastructure etc"));
+    menuItemDonate->SetBitmap(mmBitmap(png::PP));
+    wxMenuItem* menuItemBuyCoffee = new wxMenuItem(menuTools, MENU_BUY_COFFEE
+        , _("Buy us a Coffee")
+        , _("Buy key developer a coffee"));
+    // menuItemDonate->SetBitmap(mmBitmap(png::COFFEE));
+
+    wxMenuItem* menuItemCommunity = new wxMenuItem(menuTools, MENU_COMMUNITY
+        , _("Community")
+        , _("Stay in touch with MMEX community"));
+    menuItemCommunity->SetBitmap(mmBitmap(png::COMMUNITY));
+    wxMenu *menuCommunity = new wxMenu;
+    menuCommunity->Append(menuItemWebsite);
+    menuCommunity->Append(menuItemReportIssues);
+    menuCommunity->Append(menuItemWiki);
+    menuCommunity->Append(menuItemGitHub);
+    menuCommunity->Append(menuItemSlack);
+    menuCommunity->Append(menuItemFacebook);
+    menuCommunity->Append(menuItemTwitter);
+    menuCommunity->Append(menuItemYouTube);
+    menuCommunity->Append(menuItemGooglePlay);
+    menuCommunity->Append(menuItemNotify);
+    menuCommunity->Append(menuItemRSS);
+    menuCommunity->Append(menuItemDonate);
+    menuCommunity->Append(menuItemBuyCoffee);
+    menuItemCommunity->SetSubMenu(menuCommunity);
+    menuHelp->Append(menuItemCommunity);
+
+    wxMenuItem* menuItemReportBug = new wxMenuItem(menuTools, MENU_REPORT_BUG
+        , _("Report a Bug")
+        , _("Report an error in application to the developers"));
+    menuItemReportBug->SetBitmap(mmBitmap(png::BUG));
+    menuHelp->Append(menuItemReportBug);
 
     wxMenuItem* menuItemAppStart = new wxMenuItem(menuTools, MENU_SHOW_APPSTART
-        , _("&Show App Start Dialog"), _("App Start Dialog"));
+        , _("Reopen &Start-up Dialog"), _("Show application start-up dialog"));
     menuItemAppStart->SetBitmap(mmBitmap(png::APPSTART));
     menuHelp->Append(menuItemAppStart);
 
-    menuHelp->AppendSeparator();
-
     wxMenuItem* menuItemCheck = new wxMenuItem(menuTools, MENU_CHECKUPDATE
-        , _("Check for &Updates"), _("Check For Updates"));
+        , _("Check for &Updates"), _("Check if a new MMEX version is avaiable"));
     menuItemCheck->SetBitmap(mmBitmap(png::UPDATE));
     menuHelp->Append(menuItemCheck);
-
-    wxMenuItem* menuGooglePlay = new wxMenuItem(menuTools, MENU_GOOGLEPLAY
-        , _("Get Android Version")
-        , _("Run this program in your Android smart phone or tablet"));
-    menuGooglePlay->SetBitmap(mmBitmap(png::GOOGLE_PLAY));
-    menuHelp->Append(menuGooglePlay);
-
-    wxMenuItem* menuItemReportIssues = new wxMenuItem(menuTools, MENU_REPORTISSUES
-        , _("Visit MMEX Forum")
-        , _("Visit the MMEX forum. See existing user comments, or report new issues with the software."));
-    menuItemReportIssues->SetBitmap(mmBitmap(png::FORUM));
-    menuHelp->Append(menuItemReportIssues);
-
-    wxMenuItem* menuItemNotify = new wxMenuItem(menuTools, MENU_ANNOUNCEMENTMAILING
-        , _("Register/View Release &Notifications")
-        , _("Sign up to Notification Mailing List or View existing announcements."));
-    menuItemNotify->SetBitmap(mmBitmap(png::NEWS));
-    menuHelp->Append(menuItemNotify);
-
-    wxMenuItem* menuItemFacebook = new wxMenuItem(menuTools, MENU_FACEBOOK
-        , _("Visit us on Facebook"), _("Visit us on Facebook"));
-    menuItemFacebook->SetBitmap(mmBitmap(png::FACEBOOK));
-    menuHelp->Append(menuItemFacebook);
 
     wxMenuItem* menuItemAbout = new wxMenuItem(menuTools, wxID_ABOUT
         , _("&About..."), _("Show about dialog"));
@@ -2426,18 +2495,6 @@ void mmGUIFrame::OnCheckUpdate(wxCommandEvent& /*event*/)
 }
 //----------------------------------------------------------------------------
 
-void mmGUIFrame::OnGooglePlay(wxCommandEvent& /*event*/)
-{
-    wxLaunchDefaultBrowser(mmex::weblink::GooglePlay);
-}
-//----------------------------------------------------------------------------
-
-void mmGUIFrame::OnReportIssues(wxCommandEvent& /*event*/)
-{
-    wxLaunchDefaultBrowser(mmex::weblink::Forum);
-}
-//----------------------------------------------------------------------------
-
 void mmGUIFrame::OnBeNotified(wxCommandEvent& /*event*/)
 {
     Model_Setting::instance().Set(INIDB_NEWS_LAST_READ_DATE, wxDate::Today().FormatISODate());
@@ -2445,9 +2502,63 @@ void mmGUIFrame::OnBeNotified(wxCommandEvent& /*event*/)
 }
 //----------------------------------------------------------------------------
 
-void mmGUIFrame::OnFacebook(wxCommandEvent& /*event*/)
+void mmGUIFrame::OnSimpleURLOpen(wxCommandEvent& event)
 {
-    wxLaunchDefaultBrowser(mmex::weblink::Facebook);
+    wxString url;
+    switch(event.GetId())
+    {
+    case MENU_FACEBOOK: url=mmex::weblink::Facebook; break;
+    case MENU_TWITTER: url=mmex::weblink::Twitter; break;
+    case MENU_WEBSITE: url=mmex::weblink::WebSite; break;
+    case MENU_WIKI: url=mmex::weblink::Wiki; break;
+    case MENU_DONATE: url=mmex::weblink::Donate; break;
+    case MENU_REPORTISSUES: url=mmex::weblink::Forum; break;
+    case MENU_GOOGLEPLAY: url=mmex::weblink::GooglePlay; break;
+    case MENU_BUY_COFFEE: url=mmex::weblink::SquareCashGuan; break;
+    case MENU_RSS: url=mmex::weblink::NewsRSS; break;
+    case MENU_YOUTUBE: url=mmex::weblink::YouTube; break;
+    case MENU_GITHUB: url=mmex::weblink::GitHub; break;
+    case MENU_SLACK: url=mmex::weblink::Slack; break;
+    }
+    if (!url.IsEmpty()) wxLaunchDefaultBrowser(url);
+}
+
+//----------------------------------------------------------------------------
+
+void mmGUIFrame::OnReportBug(wxCommandEvent& /*event*/)
+{
+    std::vector<wxString> texts = {
+        _("Please follow these tasks before submitting new bug:"),
+        _("1. Use Help->Check for Updates in MMEX to get latest version - your problem can be fixed already."),
+        _("2. Search https://github.com/moneymanagerex/moneymanagerex/issues?q=is:issue for similar problem - update existing issue instead of creating new one."),
+        _("3. Put some descriptive name for your issue in the Title field above."),
+        _("4. Replace this text (marked with >) with detailed description of your problem."),
+        _("Read https://www.chiark.greenend.org.uk/~sgtatham/bugs.html for useful tips."),
+        _("5. Include steps to reproduce your issue, attach screenshots where appropriate."),
+        _("6. Please do not remove information attached below this text.")
+    };
+    std::vector<std::pair<wxString, wxString>> fixes = {
+        { "\n\n", "<br>" }, { "\n", " " }, { "  ", " " },
+        { "^Version", "\n<hr><small><b>Version</b>" },
+        { "Database version supported:", L"\u2b25 db" },
+        { "Git commit:", L"\u2b25 git" },
+        { "Git branch: ", "" },
+        { L"MMEX is using the following support products: \u2b25", "<b>Libs</b>:" },
+        { "<br>Build on", "<br><b>Build</b>:" },
+        { " with:", "" },
+        { L"Running on: \u2b25", "<b>OS</b>:" },
+        { "(.)$", "\\1</small>" }
+    };
+    wxRegEx re;
+    wxString diag = mmex::getProgramDescription();
+    for (const auto& kv: fixes)
+        if (re.Compile(kv.first, wxRE_EXTENDED)) re.Replace(&diag, kv.second);
+    wxString api = "/new?body=";
+    for (const auto& text: texts)
+        api << "> " << text << "\n";
+    api << diag;
+    wxURI req = mmex::weblink::BugReport + api;
+    wxLaunchDefaultBrowser(req.BuildURI());
 }
 
 //----------------------------------------------------------------------------

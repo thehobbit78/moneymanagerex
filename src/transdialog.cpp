@@ -1,7 +1,7 @@
 /*******************************************************
  Copyright (C) 2006 Madhan Kanagavel
- Copyright (C) 2011 Stefano Giorgio
- Copyright (C) 2011-2016 Nikolay Akimov
+ Copyright (C) 2011-2017 Nikolay Akimov
+ Copyright (C) 2011-2017 Stefano Giorgio [stef145g]
 
  This program is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -76,6 +76,7 @@ mmTransDialog::mmTransDialog(wxWindow* parent
     , m_advanced(false)
     , m_current_balance(current_balance)
     , m_duplicate(duplicate)
+    , m_account_id(account_id)
     , skip_account_init_(false)
     , skip_payee_init_(false)
     , skip_status_init_(false)
@@ -112,7 +113,9 @@ mmTransDialog::mmTransDialog(wxWindow* parent
         if (to_acc) 
             m_to_currency = Model_Account::currency(to_acc);
         if (m_to_currency) 
-            m_advanced = !m_new_trx && (m_currency->CURRENCYID != m_to_currency->CURRENCYID || m_trx_data.TRANSAMOUNT != m_trx_data.TOTRANSAMOUNT);
+            m_advanced = !m_new_trx 
+                && (m_currency->CURRENCYID != m_to_currency->CURRENCYID
+                    || m_trx_data.TRANSAMOUNT != m_trx_data.TOTRANSAMOUNT);
     }
 
     long style = wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX;
@@ -160,7 +163,8 @@ void mmTransDialog::dataToControls()
 
     if (!skip_status_init_) //Status
     {
-        choiceStatus_->SetSelection(Model_Checking::status(m_trx_data.STATUS));
+        m_status.InitStatus(m_trx_data);
+        choiceStatus_->SetSelection(Model_Checking::status(m_status.Status(m_account_id)));
         skip_status_init_ = true;
     }
 
@@ -177,8 +181,12 @@ void mmTransDialog::dataToControls()
         if (m_transfer)
         {
             if (!m_advanced)
-                m_trx_data.TOTRANSAMOUNT = m_trx_data.TRANSAMOUNT 
-                    * (m_to_currency ? m_currency->BASECONVRATE / m_to_currency->BASECONVRATE : 1);
+            {
+                double exch = 1;
+                if (m_to_currency && m_to_currency->BASECONVRATE > 0)
+                    exch = m_currency->BASECONVRATE / m_to_currency->BASECONVRATE;
+                m_trx_data.TOTRANSAMOUNT = m_trx_data.TRANSAMOUNT * exch;
+            }
             toTextAmount_->SetValue(m_trx_data.TOTRANSAMOUNT, Model_Currency::precision(m_trx_data.TOACCOUNTID));
         }
         else
@@ -397,7 +405,8 @@ void mmTransDialog::CreateControls()
 
     for (const auto& i : Model_Checking::all_type())
     {
-        if (i != Model_Checking::all_type()[Model_Checking::TRANSFER] || Model_Account::instance().all().size() > 1)
+        if (i != Model_Checking::all_type()[Model_Checking::TRANSFER] 
+            || Model_Account::instance().all().size() > 1)
             transaction_type_->Append(wxGetTranslation(i), new wxStringClientData(i));
     }
 
@@ -488,7 +497,8 @@ void mmTransDialog::CreateControls()
         , wxSize(cbPayee_->GetSize().GetY(), cbPayee_->GetSize().GetY()), 0);
     bFrequentUsedNotes->SetToolTip(_("Select one of the frequently used notes"));
     bFrequentUsedNotes->Connect(ID_DIALOG_TRANS_BUTTON_FREQENTNOTES
-        , wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(mmTransDialog::OnFrequentUsedNotes), nullptr, this);
+        , wxEVT_COMMAND_BUTTON_CLICKED
+        , wxCommandEventHandler(mmTransDialog::OnFrequentUsedNotes), nullptr, this);
     
     // Attachments ---------------------------------------------
     bAttachments_ = new wxBitmapButton(this, wxID_FILE
@@ -501,7 +511,8 @@ void mmTransDialog::CreateControls()
     RightAlign_sizer->Add(bAttachments_, wxSizerFlags().Border(wxRIGHT, 5));
     RightAlign_sizer->Add(bFrequentUsedNotes, wxSizerFlags().Border(wxLEFT, 5));
 
-    textNotes_ = new wxTextCtrl(this, ID_DIALOG_TRANS_TEXTNOTES, "", wxDefaultPosition, wxSize(-1, 120), wxTE_MULTILINE);
+    textNotes_ = new wxTextCtrl(this, ID_DIALOG_TRANS_TEXTNOTES
+        , "", wxDefaultPosition, wxSize(-1, 120), wxTE_MULTILINE);
     box_sizer->Add(textNotes_, wxSizerFlags(g_flagsExpand).Border(wxLEFT | wxRIGHT | wxBOTTOM, 10));
 
     /**********************************************************************************************
@@ -606,7 +617,8 @@ bool mmTransDialog::validateData()
     else //transfer
     {
         Model_Account::Data *to_account = Model_Account::instance().get(cbPayee_->GetValue());
-        if (!to_account || to_account->ACCOUNTID == m_trx_data.ACCOUNTID || Model_Account::type(to_account) == Model_Account::INVESTMENT)
+        if (!to_account || to_account->ACCOUNTID == m_trx_data.ACCOUNTID
+            || Model_Account::type(to_account) == Model_Account::INVESTMENT)
         {
             mmErrorDialogs::InvalidAccount((wxWindow*)cbPayee_, true);
             return false;
@@ -626,6 +638,54 @@ bool mmTransDialog::validateData()
     {
         mmErrorDialogs::InvalidCategory((wxWindow*)bCategory_, false);
         return false;
+    }
+
+    /* Check if transaction is to proceed.*/
+    if (Model_Account::BoolOf(account->STATEMENTLOCKED))
+    {
+        if (dpc_->GetValue() <= Model_Account::DateOf(account->STATEMENTDATE))
+        {
+            if (wxMessageBox(_(wxString::Format(
+                "Locked transaction to date: %s\n\n"
+                "Do you wish to continue ? "
+                , mmGetDateForDisplay(account->STATEMENTDATE)))
+                , _("MMEX Transaction Check"), wxYES_NO | wxICON_WARNING) == wxNO)
+            {
+                return false;
+            }
+        }
+    }
+
+    //Checking account does not exceed limits
+    if (m_new_trx || m_duplicate)
+    {
+        bool abort_transaction = false;
+        double new_value = m_trx_data.TRANSAMOUNT;
+
+        if (m_trx_data.TRANSCODE == Model_Checking::all_type()[Model_Checking::WITHDRAWAL])
+        {
+            new_value *= -1;
+        }
+
+        new_value += m_current_balance;
+
+        if ((account->MINIMUMBALANCE != 0) && (new_value < account->MINIMUMBALANCE))
+        {
+            abort_transaction = true;
+        }
+
+        if ((account->CREDITLIMIT != 0) && (new_value < (account->CREDITLIMIT * -1)))
+        {
+            abort_transaction = true;
+        }
+
+        if (abort_transaction && wxMessageBox(_(
+            "This transaction will exceed your account limit.\n\n"
+            "Do you wish to continue?")
+            , _("MMEX Transaction Check"), wxYES_NO | wxICON_WARNING) == wxNO)
+        {
+            return false;
+        }
     }
 
     return true;
@@ -1027,7 +1087,10 @@ void mmTransDialog::OnOk(wxCommandEvent& event)
     m_trx_data.TRANSACTIONNUMBER = textNumber_->GetValue();
     m_trx_data.TRANSDATE = dpc_->GetValue().FormatISODate();
     wxStringClientData* status_obj = (wxStringClientData*) choiceStatus_->GetClientObject(choiceStatus_->GetSelection());
-    if (status_obj) m_trx_data.STATUS = Model_Checking::toShortStatus(status_obj->GetData());
+    if (status_obj)
+    {
+        m_status.SetStatus(Model_Checking::toShortStatus(status_obj->GetData()), m_account_id, m_trx_data);
+    }
 
     if (!validateData()) return;
 
@@ -1036,55 +1099,6 @@ void mmTransDialog::OnOk(wxCommandEvent& event)
         r = Model_Checking::instance().create();
 
     Model_Checking::putDataToTransaction(r, m_trx_data);
-
-    /* Check if transaction is to proceed.*/
-    Model_Account::Data* account = Model_Account::instance().get(m_trx_data.ACCOUNTID);
-    if (Model_Account::BoolOf(account->STATEMENTLOCKED))
-    {
-        if (dpc_->GetValue() <= Model_Account::DateOf(account->STATEMENTDATE))
-        {
-            if (wxMessageBox(_(wxString::Format(
-                "Locked transaction to date: %s\n\n"
-                "Do you wish to continue ? "
-                , mmGetDateForDisplay(account->STATEMENTDATE)))
-                , _("MMEX Transaction Check"), wxYES_NO | wxICON_WARNING) == wxNO)
-            {
-                return;
-            }
-        }
-    }
-
-    if (m_new_trx || m_duplicate)
-    {
-        bool abort_transaction = false;
-        double new_value = m_trx_data.TRANSAMOUNT;
-
-        if (m_trx_data.TRANSCODE == Model_Checking::all_type()[Model_Checking::WITHDRAWAL])
-        {
-            new_value *= -1;
-        }
-
-        new_value += m_current_balance;
-
-        if ((account->MINIMUMBALANCE != 0) && (new_value < account->MINIMUMBALANCE))
-        {
-            abort_transaction = true;
-        }
-
-        if ((account->CREDITLIMIT != 0) && (new_value < (account->CREDITLIMIT * -1)))
-        {
-            abort_transaction = true;
-        }
-
-        if (abort_transaction && wxMessageBox( _(
-            "This transaction will exceed your account limit.\n\n"
-            "Do you wish to continue?")
-            , _("MMEX Transaction Check"), wxYES_NO | wxICON_WARNING) == wxNO)
-        {
-            return;
-        }
-    }
-
     m_trx_data.TRANSID = Model_Checking::instance().save(r);
 
     Model_Splittransaction::Data_Set splt;
@@ -1109,7 +1123,7 @@ void mmTransDialog::OnOk(wxCommandEvent& event)
     }
 
     const Model_Checking::Data& tran(*r);
-    Model_Checking::Full_Data trx(tran);
+    Model_Checking::Full_Data trx(m_account_id, tran);
     wxLogDebug("%s", trx.to_json());
 
     // if it's a credit card account, check monthly limit
